@@ -3,25 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>phanes.                     </title>
+    <title>PHANES // </title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --neon-cyan: #00f3ff;
             --neon-yellow: #ffee00;
-            --neon-red: #ff0055;
-            --hud-bg: rgba(5, 10, 15, 0.90);
+            --neon-pink: #ff0055;
+            --hud-bg: rgba(5, 12, 20, 0.88);
         }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
             padding: 0;
-            background-color: #000;
+            background-color: #020408;
             color: var(--neon-cyan);
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Share Tech Mono', monospace;
             overflow: hidden;
             user-select: none;
         }
@@ -41,45 +44,73 @@
             object-fit: cover;
         }
 
+        /* Cyberpunk FX Layers */
         .scanlines {
             position: absolute;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
-            background-size: 100% 4px;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%),
+                        radial-gradient(circle, rgba(0, 243, 255, 0.05) 0%, rgba(0,0,0,0.4) 100%);
+            background-size: 100% 4px, 100% 100%;
             z-index: 2;
         }
 
+        .corner-frame {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--neon-cyan);
+            z-index: 3;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .top-right { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        /* Tactical Header Bar */
         .hud-header {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 25px;
+            left: 70px;
             background: var(--hud-bg);
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-left: 4px solid var(--neon-cyan);
-            box-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
             z-index: 3;
+            clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%);
         }
 
         .hud-header h1 {
             margin: 0;
             font-size: 1.1rem;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             color: var(--neon-yellow);
+            text-shadow: 0 0 5px var(--neon-yellow);
         }
 
+        .hud-header span {
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            letter-spacing: 1px;
+        }
+
+        /* Sci-Fi HUD Info Panel */
         .hud-card {
             position: absolute;
-            bottom: 40px;
-            right: 40px;
-            width: 360px;
+            bottom: 35px;
+            right: 35px;
+            width: 380px;
             background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
-            padding: 20px;
+            padding: 18px;
             display: none;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.25), inset 0 0 15px rgba(0, 243, 255, 0.1);
             z-index: 3;
+            clip-path: polygon(0 0, 92% 0, 100% 8%, 100% 100%, 8% 100%, 0 92%);
         }
 
         .hud-card h2 {
@@ -87,8 +118,9 @@
             font-size: 1.1rem;
             color: var(--neon-yellow);
             text-transform: uppercase;
-            border-bottom: 1px dashed var(--neon-cyan);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.4);
             padding-bottom: 5px;
+            letter-spacing: 1px;
         }
 
         .hud-card .data-row {
@@ -98,59 +130,60 @@
             justify-content: space-between;
         }
 
-        .hud-card .label { color: #888; }
+        .hud-card .label { color: #8a9ba8; }
         .hud-card .val { color: #fff; font-weight: bold; }
 
         .progress-bar-container {
             width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
             border: 1px solid var(--neon-cyan);
             margin: 10px 0;
-            position: relative;
         }
 
         .progress-bar-fill {
             height: 100%;
             width: 0%;
-            background: var(--neon-yellow);
-            box-shadow: 0 0 8px var(--neon-yellow);
-            transition: width 0.1s linear;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: width 0.05s ease-out;
         }
 
         .desc-box {
             margin-top: 10px;
-            padding: 8px;
-            background: rgba(0, 243, 255, 0.05);
-            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 10px;
+            background: rgba(0, 243, 255, 0.04);
+            border-left: 2px solid var(--neon-cyan);
             font-size: 0.80rem;
-            color: #ddd;
-            line-height: 1.3;
+            color: #d1e0ea;
+            line-height: 1.35;
         }
 
         .controls {
             position: absolute;
-            bottom: 40px;
-            left: 40px;
+            bottom: 35px;
+            left: 35px;
             z-index: 3;
         }
 
         button {
-            background: rgba(0,0,0,0.8);
+            background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
-            padding: 12px 24px;
+            padding: 12px 28px;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             cursor: pointer;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             transition: all 0.2s;
+            clip-path: polygon(0 0, 90% 0, 100% 30%, 100% 100%, 10% 100%, 0 70%);
         }
 
         button:hover {
             background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 15px var(--neon-cyan);
+            box-shadow: 0 0 20px var(--neon-cyan);
+            font-weight: bold;
         }
     </style>
 </head>
@@ -159,10 +192,15 @@
 <div id="viewport">
     <video id="webcam" autoplay playsinline muted></video>
     <canvas id="output"></canvas>
+    
     <div class="scanlines"></div>
+    <div class="corner-frame top-left"></div>
+    <div class="corner-frame top-right"></div>
+    <div class="corner-frame bottom-left"></div>
+    <div class="corner-frame bottom-right"></div>
 
     <div class="hud-header">
-        <h1>PHANES // FOCUS HUD v2.5</h1>
+        <h1>PHANES // FOCUS HUD v3.0</h1>
         <span id="status">PRESS INITIALIZE TO ENGAGE</span>
     </div>
 
@@ -180,7 +218,7 @@
     </div>
 
     <div class="controls">
-        <button onclick="initApp()">INITIALIZE FOCUS SCANNER</button>
+        <button onclick="initApp()">INITIALIZE FOCUS</button>
     </div>
 </div>
 
@@ -194,12 +232,11 @@
     const progressFill = document.getElementById('progress-fill');
     const cardPct = document.getElementById('card-pct');
 
-    // Persistence & Progress state tracking variables
     let currentLockedTarget = null;
     let targetBox = null;
     let scanProgress = 0;
     let persistentCounter = 0;
-    const PERSIST_LIMIT = 25; // Keeps tracking for ~25 frames (~1 second) after losing sight
+    const PERSIST_LIMIT = 30; // Keeps target tracked cleanly for 1 second if obscured
 
     const KNOWLEDGE_BASE = {
         cell_phone: {
@@ -257,7 +294,7 @@
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        statusText.innerText = "FOCUS SCANNER ACTIVE";
+        statusText.innerText = "FOCUS SCANNER OPERATIONAL";
         scanFrame();
     }
 
@@ -270,15 +307,15 @@
         let detectedInFrame = null;
         let detectedBox = null;
 
-        // Process Objects
+        // Detect Objects
         objects.forEach(obj => {
-            if (obj.score > 0.45 && !detectedInFrame) {
+            if (obj.score > 0.40 && !detectedInFrame) {
                 detectedInFrame = obj.class.toLowerCase();
                 detectedBox = obj.bbox;
             }
         });
 
-        // Process Faces
+        // Detect Faces
         faces.forEach(face => {
             if (!detectedInFrame) {
                 detectedInFrame = 'person';
@@ -294,29 +331,27 @@
         if (detectedInFrame) {
             currentLockedTarget = detectedInFrame;
             targetBox = detectedBox;
-            persistentCounter = PERSIST_LIMIT; // Reset hold counter
+            persistentCounter = PERSIST_LIMIT;
         } else if (persistentCounter > 0) {
-            persistentCounter--; // Smooth countdown when target moves briefly out of frame
+            persistentCounter--;
         } else {
             currentLockedTarget = null;
             targetBox = null;
             scanProgress = 0;
         }
 
-        // Render HUD Target & Manage Progress Bar
+        // Render HUD Target & Rapid Scan Progress
         if (currentLockedTarget && targetBox) {
             const [x, y, w, h] = targetBox;
             
-            // Advance scan progress smoothly up to 100%
+            // Fast Progress Fill (~0.5s total scan speed)
             if (scanProgress < 100) {
-                scanProgress += 4; // Increment speed
+                scanProgress += 12;
                 if (scanProgress > 100) scanProgress = 100;
             }
 
-            // Draw HUD target box and progress ring
-            drawHudBox(x, y, w, h, '#00f3ff', currentLockedTarget.toUpperCase(), scanProgress);
+            drawProReticle(x, y, w, h, currentLockedTarget.toUpperCase(), scanProgress);
 
-            // Update UI card details
             infoCard.style.display = 'block';
             cardPct.innerText = `${scanProgress}%`;
             progressFill.style.width = `${scanProgress}%`;
@@ -329,7 +364,7 @@
                 desc: "Target category verified in public dataset."
             };
 
-            document.getElementById('card-title').innerText = scanProgress < 100 ? "SEARCHING MARKET..." : data.title;
+            document.getElementById('card-title').innerText = scanProgress < 100 ? "SEARCHING..." : data.title;
             document.getElementById('card-entity').innerText = currentLockedTarget.toUpperCase();
             document.getElementById('card-brand').innerText = scanProgress < 100 ? "Scanning..." : data.brand;
             document.getElementById('card-price').innerText = scanProgress < 100 ? "Calculating..." : data.price;
@@ -343,25 +378,45 @@
         requestAnimationFrame(scanFrame);
     }
 
-    function drawHudBox(x, y, w, h, color, label, progress) {
-        ctx.strokeStyle = color;
+    // Professional Cyberpunk Canvas Reticle Rendering
+    function drawProReticle(x, y, w, h, label, progress) {
+        const cornerLen = Math.min(w, h) * 0.25;
+
+        // Glowing outer bounding box
+        ctx.strokeStyle = progress < 100 ? 'rgba(255, 238, 0, 0.8)' : 'rgba(0, 243, 255, 0.9)';
         ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, w, h);
 
-        // Reticle Corners
-        ctx.fillStyle = '#ffee00';
-        ctx.fillRect(x - 3, y - 3, 6, 6);
-        ctx.fillRect(x + w - 3, y + h - 3, 6, 6);
+        // Tactical Corner Accents
+        ctx.beginPath();
+        // Top-Left
+        ctx.moveTo(x, y + cornerLen); ctx.lineTo(x, y); ctx.lineTo(x + cornerLen, y);
+        // Top-Right
+        ctx.moveTo(x + w - cornerLen, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + cornerLen);
+        // Bottom-Left
+        ctx.moveTo(x, y + h - cornerLen); ctx.lineTo(x, y + h); ctx.lineTo(x + cornerLen, y + h);
+        // Bottom-Right
+        ctx.moveTo(x + w - cornerLen, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - cornerLen);
+        ctx.stroke();
 
-        // Progress Bar overlay under the bounding box
+        // Center Crosshair
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - 8, cy); ctx.lineTo(cx + 8, cy);
+        ctx.moveTo(cx, cy - 8); ctx.lineTo(cx, cy + 8);
+        ctx.stroke();
+
+        // Canvas Scan Progress Bar
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        ctx.fillRect(x, y + h + 5, w, 6);
-        ctx.fillStyle = '#ffee00';
-        ctx.fillRect(x, y + h + 5, (w * progress) / 100, 6);
+        ctx.fillRect(x, y + h + 8, w, 5);
+        ctx.fillStyle = progress < 100 ? '#ffee00' : '#00f3ff';
+        ctx.fillRect(x, y + h + 8, (w * progress) / 100, 5);
 
-        // Text Tag
-        ctx.fillStyle = color;
-        ctx.font = "12px 'Courier New'";
+        // HUD Text Tag
+        ctx.fillStyle = progress < 100 ? '#ffee00' : '#00f3ff';
+        ctx.font = "13px 'Share Tech Mono'";
         ctx.fillText(`[ ${label} ] - ${progress}%`, x, y - 8);
     }
 </script>
