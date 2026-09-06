@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHANES        </title>
-    <!-- Load TensorFlow.js and COCO-SSD -->
+    <title>PHANES // Focus Visual Scanner Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    <!-- Load Face-API / Blazeface for Person Focus -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
 
     <style>
@@ -71,7 +69,6 @@
             color: var(--neon-yellow);
         }
 
-        /* Cyberpunk Card Overlay */
         .hud-card {
             position: absolute;
             bottom: 40px;
@@ -101,16 +98,27 @@
             justify-content: space-between;
         }
 
-        .hud-card .label {
-            color: #888;
+        .hud-card .label { color: #888; }
+        .hud-card .val { color: #fff; font-weight: bold; }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            margin: 10px 0;
+            position: relative;
         }
 
-        .hud-card .val {
-            color: #fff;
-            font-weight: bold;
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--neon-yellow);
+            box-shadow: 0 0 8px var(--neon-yellow);
+            transition: width 0.1s linear;
         }
 
-        .hud-card .desc-box {
+        .desc-box {
             margin-top: 10px;
             padding: 8px;
             background: rgba(0, 243, 255, 0.05);
@@ -154,13 +162,17 @@
     <div class="scanlines"></div>
 
     <div class="hud-header">
-        <h1>PHANES // FOCUS HUD v2.0</h1>
+        <h1>PHANES // FOCUS HUD v2.5</h1>
         <span id="status">PRESS INITIALIZE TO ENGAGE</span>
     </div>
 
     <div id="info-card" class="hud-card">
         <h2 id="card-title">TARGET ACQUIRED</h2>
         <div class="data-row"><span class="label">ENTITY:</span> <span id="card-entity" class="val">-</span></div>
+        <div class="data-row"><span class="label">SCAN PROGRESS:</span> <span id="card-pct" class="val" style="color:var(--neon-yellow);">0%</span></div>
+        <div class="progress-bar-container">
+            <div id="progress-fill" class="progress-bar-fill"></div>
+        </div>
         <div class="data-row"><span class="label">BRAND / ORIGIN:</span> <span id="card-brand" class="val">-</span></div>
         <div class="data-row"><span class="label">EST. VALUE / COST:</span> <span id="card-price" class="val" style="color:var(--neon-yellow);">-</span></div>
         <div class="data-row"><span class="label">SOCIAL / LINK:</span> <span id="card-social" class="val" style="color:var(--neon-cyan);">-</span></div>
@@ -179,8 +191,16 @@
     const ctx = canvas.getContext('2d');
     const statusText = document.getElementById('status');
     const infoCard = document.getElementById('info-card');
+    const progressFill = document.getElementById('progress-fill');
+    const cardPct = document.getElementById('card-pct');
 
-    // Advanced Database Knowledge Graph
+    // Persistence & Progress state tracking variables
+    let currentLockedTarget = null;
+    let targetBox = null;
+    let scanProgress = 0;
+    let persistentCounter = 0;
+    const PERSIST_LIMIT = 25; // Keeps tracking for ~25 frames (~1 second) after losing sight
+
     const KNOWLEDGE_BASE = {
         cell_phone: {
             title: "SMARTPHONE TARGET",
@@ -244,49 +264,78 @@
     async function scanFrame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Run parallel Object & Face detection
         const objects = await objectModel.detect(video);
         const faces = await faceModel.estimateFaces(video, false);
 
-        let lockedTarget = null;
+        let detectedInFrame = null;
+        let detectedBox = null;
 
-        // Render detected object boxes
+        // Process Objects
         objects.forEach(obj => {
-            if (obj.score > 0.5) {
-                const [x, y, w, h] = obj.bbox;
-                drawHudBox(x, y, w, h, '#00f3ff', obj.class.toUpperCase());
-                if (!lockedTarget) lockedTarget = obj.class.toLowerCase();
+            if (obj.score > 0.45 && !detectedInFrame) {
+                detectedInFrame = obj.class.toLowerCase();
+                detectedBox = obj.bbox;
             }
         });
 
-        // Render face detection targets
+        // Process Faces
         faces.forEach(face => {
-            const x = face.topLeft[0];
-            const y = face.topLeft[1];
-            const w = face.bottomRight[0] - x;
-            const h = face.bottomRight[1] - y;
-            drawHudBox(x, y, w, h, '#ffee00', "FACE LOCK");
-            lockedTarget = 'person';
+            if (!detectedInFrame) {
+                detectedInFrame = 'person';
+                const x = face.topLeft[0];
+                const y = face.topLeft[1];
+                const w = face.bottomRight[0] - x;
+                const h = face.bottomRight[1] - y;
+                detectedBox = [x, y, w, h];
+            }
         });
 
-        // Update Info HUD
-        if (lockedTarget && KNOWLEDGE_BASE[lockedTarget]) {
-            const data = KNOWLEDGE_BASE[lockedTarget];
+        // Sticky Lock Memory Engine
+        if (detectedInFrame) {
+            currentLockedTarget = detectedInFrame;
+            targetBox = detectedBox;
+            persistentCounter = PERSIST_LIMIT; // Reset hold counter
+        } else if (persistentCounter > 0) {
+            persistentCounter--; // Smooth countdown when target moves briefly out of frame
+        } else {
+            currentLockedTarget = null;
+            targetBox = null;
+            scanProgress = 0;
+        }
+
+        // Render HUD Target & Manage Progress Bar
+        if (currentLockedTarget && targetBox) {
+            const [x, y, w, h] = targetBox;
+            
+            // Advance scan progress smoothly up to 100%
+            if (scanProgress < 100) {
+                scanProgress += 4; // Increment speed
+                if (scanProgress > 100) scanProgress = 100;
+            }
+
+            // Draw HUD target box and progress ring
+            drawHudBox(x, y, w, h, '#00f3ff', currentLockedTarget.toUpperCase(), scanProgress);
+
+            // Update UI card details
             infoCard.style.display = 'block';
-            document.getElementById('card-title').innerText = data.title;
-            document.getElementById('card-entity').innerText = lockedTarget.toUpperCase();
-            document.getElementById('card-brand').innerText = data.brand;
-            document.getElementById('card-price').innerText = data.price;
-            document.getElementById('card-social').innerText = data.social;
-            document.getElementById('card-desc').innerText = data.desc;
-        } else if (lockedTarget) {
-            infoCard.style.display = 'block';
-            document.getElementById('card-title').innerText = "GENERIC OBJECT";
-            document.getElementById('card-entity').innerText = lockedTarget.toUpperCase();
-            document.getElementById('card-brand').innerText = "Unknown Entity";
-            document.getElementById('card-price').innerText = "Market Search Active";
-            document.getElementById('card-social').innerText = "#unindexed";
-            document.getElementById('card-desc').innerText = "Target scanned. Category verified in public neural weights.";
+            cardPct.innerText = `${scanProgress}%`;
+            progressFill.style.width = `${scanProgress}%`;
+
+            const data = KNOWLEDGE_BASE[currentLockedTarget] || {
+                title: "GENERIC OBJECT",
+                brand: "Unknown Brand",
+                price: "Market Search Active",
+                social: "#unindexed",
+                desc: "Target category verified in public dataset."
+            };
+
+            document.getElementById('card-title').innerText = scanProgress < 100 ? "SEARCHING MARKET..." : data.title;
+            document.getElementById('card-entity').innerText = currentLockedTarget.toUpperCase();
+            document.getElementById('card-brand').innerText = scanProgress < 100 ? "Scanning..." : data.brand;
+            document.getElementById('card-price').innerText = scanProgress < 100 ? "Calculating..." : data.price;
+            document.getElementById('card-social').innerText = scanProgress < 100 ? "Resolving..." : data.social;
+            document.getElementById('card-desc').innerText = scanProgress < 100 ? "Analyzing visual signature..." : data.desc;
+
         } else {
             infoCard.style.display = 'none';
         }
@@ -294,20 +343,26 @@
         requestAnimationFrame(scanFrame);
     }
 
-    function drawHudBox(x, y, w, h, color, label) {
+    function drawHudBox(x, y, w, h, color, label, progress) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, w, h);
 
-        // Target reticle corners
-        ctx.fillStyle = '#ff0055';
+        // Reticle Corners
+        ctx.fillStyle = '#ffee00';
         ctx.fillRect(x - 3, y - 3, 6, 6);
         ctx.fillRect(x + w - 3, y + h - 3, 6, 6);
 
-        // Floating label
+        // Progress Bar overlay under the bounding box
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(x, y + h + 5, w, 6);
+        ctx.fillStyle = '#ffee00';
+        ctx.fillRect(x, y + h + 5, (w * progress) / 100, 6);
+
+        // Text Tag
         ctx.fillStyle = color;
         ctx.font = "12px 'Courier New'";
-        ctx.fillText(`[ ${label} ]`, x, y - 8);
+        ctx.fillText(`[ ${label} ] - ${progress}%`, x, y - 8);
     }
 </script>
 </body>
