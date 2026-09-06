@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHANES</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+    <title>PHANES // </title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
@@ -15,7 +12,7 @@
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
             --neon-red: #ff0055;
-            --hud-bg: rgba(2, 8, 14, 0.92);
+            --hud-bg: rgba(2, 8, 14, 0.94);
         }
 
         * { box-sizing: border-box; }
@@ -45,11 +42,10 @@
             object-fit: cover;
         }
 
-        /* Tactical Framing Overlay */
         .hud-border {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            border: 2px solid rgba(0, 243, 255, 0.2);
+            border: 2px solid rgba(0, 243, 255, 0.25);
             pointer-events: none;
             z-index: 2;
         }
@@ -59,7 +55,7 @@
             top: 25px;
             left: 35px;
             background: var(--hud-bg);
-            padding: 10px 22px;
+            padding: 12px 24px;
             border-left: 4px solid var(--neon-cyan);
             border-bottom: 1px solid rgba(0, 243, 255, 0.3);
             box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
@@ -68,29 +64,28 @@
 
         .hud-header h1 {
             margin: 0;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             letter-spacing: 2px;
             color: var(--neon-cyan);
         }
 
         .hud-header span {
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             color: var(--neon-green);
         }
 
-        /* Focus Card HUD */
         .hud-card {
             position: absolute;
             bottom: 35px;
             right: 35px;
-            width: 390px;
+            width: 400px;
             background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
-            padding: 20px;
+            padding: 22px;
             display: none;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 35px rgba(0, 243, 255, 0.25);
             z-index: 3;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
         }
 
         .hud-card h2 {
@@ -104,8 +99,8 @@
         }
 
         .hud-card .data-row {
-            margin: 7px 0;
-            font-size: 0.88rem;
+            margin: 8px 0;
+            font-size: 0.9rem;
             display: flex;
             justify-content: space-between;
         }
@@ -123,18 +118,50 @@
             line-height: 1.4;
         }
 
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .lens-btn, .freeze-btn {
+            background: var(--neon-cyan);
+            color: #000;
+            border: none;
+            padding: 12px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .freeze-btn {
+            background: var(--neon-yellow);
+        }
+
+        .lens-btn:hover, .freeze-btn:hover {
+            box-shadow: 0 0 20px var(--neon-cyan);
+            filter: brightness(1.2);
+        }
+
         .controls {
             position: absolute;
             bottom: 35px;
             left: 35px;
             z-index: 3;
+            display: flex;
+            gap: 10px;
         }
 
-        button {
+        .main-btn {
             background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
-            padding: 14px 32px;
+            padding: 14px 28px;
             font-family: inherit;
             font-size: 0.95rem;
             cursor: pointer;
@@ -142,7 +169,7 @@
             transition: all 0.25s ease;
         }
 
-        button:hover {
+        .main-btn:hover {
             background: var(--neon-cyan);
             color: #000;
             box-shadow: 0 0 25px var(--neon-cyan);
@@ -159,207 +186,123 @@
     <div class="hud-border"></div>
 
     <div class="hud-header">
-        <h1>PHANES // FOCUS MATRIX v6.0</h1>
+        <h1>PHANES // ULTRA MATRIX v8.0</h1>
         <span id="status">STANDBY // PRESS INITIALIZE</span>
     </div>
 
     <div id="info-card" class="hud-card">
-        <h2 id="card-title">TARGET ACQUIRED</h2>
-        <div class="data-row"><span class="label">CLASSIFICATION:</span> <span id="card-entity" class="val">-</span></div>
-        <div class="data-row"><span class="label">LOCK CONFIDENCE:</span> <span id="card-conf" class="val" style="color:var(--neon-yellow);">-</span></div>
-        <div class="data-row"><span class="label">SCALE ESTIMATE:</span> <span id="card-scale" class="val" style="color:var(--neon-green);">-</span></div>
-        <div class="data-row"><span class="label">VALUE RANGE:</span> <span id="card-price" class="val" style="color:var(--neon-cyan);">-</span></div>
-        <div class="desc-box" id="card-desc">Scanning visual target registers...</div>
+        <h2 id="card-title">TARGET LOCK ACTIVE</h2>
+        <div class="data-row"><span class="label">NIGHT VISION:</span> <span id="card-nv" class="val" style="color:var(--neon-green);">ENHANCED (3.5X)</span></div>
+        <div class="data-row"><span class="label">FRAME LOCK:</span> <span id="card-lock" class="val" style="color:var(--neon-yellow);">REAL-TIME</span></div>
+        
+        <div class="desc-box" id="card-desc">
+            Align object inside the center frame. Click FREEZE FRAME to lock the snapshot, then search instantly.
+        </div>
+
+        <div class="action-grid">
+            <button class="freeze-btn" onclick="toggleFreeze()">FREEZE / UNFREEZE</button>
+            <button class="lens-btn" onclick="triggerSearch()">GOOGLE LENS SEARCH</button>
+        </div>
     </div>
 
     <div class="controls">
-        <button onclick="initApp()">ENGAGE TACTICAL FOCUS</button>
+        <button class="main-btn" onclick="initApp()">ENGAGE SYSTEM</button>
+        <button class="main-btn" onclick="toggleTorch()">TOGGLE TORCH</button>
     </div>
 </div>
 
 <script>
-    let objectModel, faceModel;
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('output');
     const ctx = canvas.getContext('2d');
     const statusText = document.getElementById('status');
     const infoCard = document.getElementById('info-card');
 
-    // Smooth Tracking State
-    let activeTrack = null;
-    let smoothBox = null;
-    let memoryTimer = 0;
-    const MEMORY_LIMIT = 60; // Persistence memory (~2 seconds)
+    let isScanning = false;
+    let isFrozen = false;
+    let mediaTrack = null;
+    let torchState = false;
 
     async function setupCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: 1280, height: 720 },
+            video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
             audio: false
         });
         video.srcObject = stream;
+        mediaTrack = stream.getVideoTracks()[0];
         return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
     }
 
     async function initApp() {
-        statusText.innerText = "LOADING NEURAL VISION ENGINES...";
-        objectModel = await cocoSsd.load();
-        faceModel = await blazeface.load();
-        
+        statusText.innerText = "INITIALIZING ULTRA STREAM...";
         await setupCamera();
+        
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        statusText.innerText = "SYSTEM ACTIVE // NIGHT VISION OPTIMIZED";
-        scanFrame();
+        statusText.innerText = "NIGHT VISION MATRIX // ACTIVE";
+        isScanning = true;
+        infoCard.style.display = 'block';
+        
+        scanLoop();
     }
 
-    function applyAdaptiveNightVision() {
-        // High Dynamic Contrast & Brightness Enhancement for Low Light
-        ctx.filter = "brightness(2.4) contrast(1.7) saturate(1.2)";
+    function toggleFreeze() {
+        isFrozen = !isFrozen;
+        const lockEl = document.getElementById('card-lock');
+        if (isFrozen) {
+            lockEl.innerText = "LOCKED / FROZEN";
+            lockEl.style.color = "var(--neon-red)";
+            statusText.innerText = "FRAME FROZEN // READY FOR ANALYSIS";
+        } else {
+            lockEl.innerText = "REAL-TIME";
+            lockEl.style.color = "var(--neon-yellow)";
+            statusText.innerText = "NIGHT VISION MATRIX // ACTIVE";
+        }
+    }
+
+    async function toggleTorch() {
+        if (!mediaTrack) return;
+        try {
+            torchState = !torchState;
+            await mediaTrack.applyConstraints({
+                advanced: [{ torch: torchState }]
+            });
+        } catch (e) {
+            statusText.innerText = "TORCH HARDWARE NOT SUPPORTED ON DEVICE";
+        }
+    }
+
+    function applyNightVisionFilter() {
+        ctx.filter = "brightness(3.5) contrast(2.0) saturate(1.2)";
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         ctx.filter = "none";
     }
 
-    function computeIoU(b1, b2) {
-        const x1 = Math.max(b1[0], b2[0]);
-        const y1 = Math.max(b1[1], b2[1]);
-        const x2 = Math.min(b1[0] + b1[2], b2[0] + b2[2]);
-        const y2 = Math.min(b1[1] + b1[3], b2[1] + b2[3]);
-        const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
-        const union = (b1[2] * b1[3]) + (b2[2] * b2[3]) - inter;
-        return inter / union;
-    }
+    function scanLoop() {
+        if (!isScanning) return;
 
-    async function scanFrame() {
-        applyAdaptiveNightVision();
+        if (!isFrozen) {
+            applyNightVisionFilter();
 
-        const objects = await objectModel.detect(canvas);
-        const faces = await faceModel.estimateFaces(canvas, false);
+            const w = canvas.width;
+            const h = canvas.height;
+            const boxSize = Math.min(w, h) * 0.42;
+            const x = (w - boxSize) / 2;
+            const y = (h - boxSize) / 2;
 
-        let bestMatch = null;
-        let bestBox = null;
-        let bestScore = 0;
-
-        // Process Object Detections
-        objects.forEach(obj => {
-            const [x, y, w, h] = obj.bbox;
-            const area = w * h;
-            let cls = obj.class.toLowerCase();
-
-            // Ignore tiny noise detections (< 2000px area)
-            if (obj.score > 0.55 && area > 2000) {
-                
-                // Scale Discrimination: Toy Model vs Actual Vehicle
-                if (cls === 'car' || cls === 'truck') {
-                    const canvasArea = canvas.width * canvas.height;
-                    const ratio = area / canvasArea;
-                    if (ratio < 0.08) {
-                        cls = 'miniature_toy_car';
-                    }
-                }
-
-                // Ignore false "person" triggers on small hand-held items
-                if (cls === 'person' && (w < 140 || h < 140)) return;
-
-                if (obj.score > bestScore) {
-                    bestMatch = cls;
-                    bestBox = obj.bbox;
-                    bestScore = Math.round(obj.score * 100);
-                }
-            }
-        });
-
-        // Face Detection Override for Real Humans
-        faces.forEach(face => {
-            const x = face.topLeft[0];
-            const y = face.topLeft[1];
-            const w = face.bottomRight[0] - x;
-            const h = face.bottomRight[1] - y;
-            if (w > 35 && h > 35) {
-                bestMatch = 'human_subject';
-                bestBox = [x, y, w, h];
-                bestScore = 98;
-            }
-        });
-
-        // Memory Lock & Smooth Kalman Interpolation
-        if (bestMatch && bestBox) {
-            activeTrack = { label: bestMatch, score: bestScore };
-            memoryTimer = MEMORY_LIMIT;
-
-            if (!smoothBox) {
-                smoothBox = [...bestBox];
-            } else {
-                // Smooth bounding box jitter
-                smoothBox[0] = smoothBox[0] * 0.75 + bestBox[0] * 0.25;
-                smoothBox[1] = smoothBox[1] * 0.75 + bestBox[1] * 0.25;
-                smoothBox[2] = smoothBox[2] * 0.75 + bestBox[2] * 0.25;
-                smoothBox[3] = smoothBox[3] * 0.75 + bestBox[3] * 0.25;
-            }
-        } else if (memoryTimer > 0) {
-            memoryTimer--; // Maintain lock during quick panning
-        } else {
-            activeTrack = null;
-            smoothBox = null;
+            drawReticle(x, y, boxSize, boxSize);
         }
 
-        // Render HUD Reticle & Information Card
-        if (activeTrack && smoothBox) {
-            const [x, y, w, h] = smoothBox;
-            drawReticle(x, y, w, h, activeTrack.label.toUpperCase());
-
-            infoCard.style.display = 'block';
-            document.getElementById('card-conf').innerText = `${activeTrack.score}%`;
-
-            renderMetadata(activeTrack.label, w * h);
-        } else {
-            infoCard.style.display = 'none';
-        }
-
-        requestAnimationFrame(scanFrame);
+        requestAnimationFrame(scanLoop);
     }
 
-    function renderMetadata(label, area) {
-        const titleEl = document.getElementById('card-title');
-        const entityEl = document.getElementById('card-entity');
-        const scaleEl = document.getElementById('card-scale');
-        const priceEl = document.getElementById('card-price');
-        const descEl = document.getElementById('card-desc');
-
-        if (label === 'miniature_toy_car') {
-            titleEl.innerText = "MINIATURE / TOY VEHICLE";
-            entityEl.innerText = "SCALE MODEL CAR";
-            scaleEl.innerText = "SMALL (< 1:18 SCALE)";
-            priceEl.innerText = "$5.00 - $40.00 USD";
-            descEl.innerText = "Target scale ratio confirms non-occupant miniature or die-cast toy vehicle.";
-        } else if (label === 'car' || label === 'truck') {
-            titleEl.innerText = "PASSENGER AUTOMOTIVE";
-            entityEl.innerText = "MOTOR VEHICLE";
-            scaleEl.innerText = "FULL SCALE (1:1)";
-            priceEl.innerText = "$15,000 - $85,000 USD";
-            descEl.innerText = "Full-size automotive target confirmed in spatial field.";
-        } else if (label === 'human_subject' || label === 'person') {
-            titleEl.innerText = "HUMAN SUBJECT";
-            entityEl.innerText = "BIOMETRIC ENTITY";
-            scaleEl.innerText = "ORGANIC LIFEFORM";
-            priceEl.innerText = "CLASSIFIED";
-            descEl.innerText = "Facial mesh & structure verified via neural vision lock.";
-        } else {
-            titleEl.innerText = label.toUpperCase();
-            entityEl.innerText = label.toUpperCase();
-            scaleEl.innerText = "STANDARD FIELD";
-            priceEl.innerText = "VERIFIED ITEM";
-            descEl.innerText = "Target identity locked and tracked via optical memory matrix.";
-        }
-    }
-
-    function drawReticle(x, y, w, h, label) {
-        const cLen = Math.min(w, h) * 0.25;
+    function drawReticle(x, y, w, h) {
+        const cLen = w * 0.22;
 
         ctx.strokeStyle = '#00f3ff';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
 
-        // Dynamic Tactical Corner Brackets
         ctx.beginPath();
         ctx.moveTo(x, y + cLen); ctx.lineTo(x, y); ctx.lineTo(x + cLen, y);
         ctx.moveTo(x + w - cLen, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + cLen);
@@ -367,17 +310,20 @@
         ctx.moveTo(x + w - cLen, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - cLen);
         ctx.stroke();
 
-        // Center Aim Indicator
         const cx = x + w / 2;
         const cy = y + h / 2;
         ctx.strokeStyle = '#ffee00';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(cx - 4, cy - 4, 8, 8);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx - 15, cy - 15, 30, 30);
 
-        // Label Tag
         ctx.fillStyle = '#00f3ff';
-        ctx.font = "13px 'Share Tech Mono'";
-        ctx.fillText(`[ LOCK // ${label} ]`, x, y - 8);
+        ctx.font = "14px 'Share Tech Mono'";
+        ctx.fillText("[ FOCUS MATRIX LOCK ]", x, y - 10);
+    }
+
+    function triggerSearch() {
+        window.open('https://lens.google.com/', '_blank');
+        statusText.innerText = "DISPATCHING VISUAL SEARCH ENGINE...";
     }
 </script>
 </body>
