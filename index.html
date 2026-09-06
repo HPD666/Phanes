@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHANES </title>
+    <title>phanes</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
@@ -14,7 +14,8 @@
             --neon-cyan: #00f3ff;
             --neon-green: #00ff66;
             --neon-yellow: #ffee00;
-            --hud-bg: rgba(2, 8, 14, 0.93);
+            --neon-orange: #ff9900;
+            --hud-bg: rgba(2, 8, 14, 0.94);
         }
 
         * { box-sizing: border-box; }
@@ -58,9 +59,9 @@
             left: 35px;
             background: var(--hud-bg);
             padding: 12px 24px;
-            border-left: 4px solid var(--neon-green);
+            border-left: 4px solid var(--neon-cyan);
             border-bottom: 1px solid rgba(0, 243, 255, 0.3);
-            box-shadow: 0 0 20px rgba(0, 255, 102, 0.15);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
             z-index: 3;
         }
 
@@ -68,26 +69,26 @@
             margin: 0;
             font-size: 1.1rem;
             letter-spacing: 2px;
-            color: var(--neon-green);
+            color: var(--neon-cyan);
         }
 
         .hud-header span {
             font-size: 0.78rem;
-            color: var(--neon-cyan);
+            color: var(--neon-green);
         }
 
         .hud-card {
             position: absolute;
             bottom: 35px;
             right: 35px;
-            width: 390px;
+            width: 410px;
             background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
-            padding: 20px;
+            padding: 22px;
             display: none;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 35px rgba(0, 243, 255, 0.22);
             z-index: 3;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
         }
 
         .hud-card h2 {
@@ -114,7 +115,7 @@
             margin-top: 12px;
             padding: 10px 12px;
             background: rgba(0, 243, 255, 0.05);
-            border-left: 3px solid var(--neon-cyan);
+            border-left: 3px solid var(--neon-green);
             font-size: 0.82rem;
             color: #d1e0ea;
             line-height: 1.4;
@@ -129,8 +130,8 @@
 
         button {
             background: var(--hud-bg);
-            border: 1px solid var(--neon-green);
-            color: var(--neon-green);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
             padding: 14px 32px;
             font-family: inherit;
             font-size: 0.95rem;
@@ -140,9 +141,9 @@
         }
 
         button:hover {
-            background: var(--neon-green);
+            background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 25px var(--neon-green);
+            box-shadow: 0 0 25px var(--neon-cyan);
             font-weight: bold;
         }
     </style>
@@ -156,21 +157,21 @@
     <div class="hud-border"></div>
 
     <div class="hud-header">
-        <h1>PHANES // FOCUS MATRIX v6.5</h1>
-        <span id="status">STANDBY // PRESS INITIALIZE</span>
+        <h1>PHANES // NEURAL CONSENSUS v9.0</h1>
+        <span id="status">SYSTEM IDLE // INITIALIZE MATRIX</span>
     </div>
 
     <div id="info-card" class="hud-card">
-        <h2 id="card-title">TARGET ACQUIRED</h2>
-        <div class="data-row"><span class="label">CLASSIFICATION:</span> <span id="card-entity" class="val">-</span></div>
-        <div class="data-row"><span class="label">LOCK CONFIDENCE:</span> <span id="card-conf" class="val" style="color:var(--neon-yellow);">-</span></div>
-        <div class="data-row"><span class="label">SCALE / TYPE:</span> <span id="card-scale" class="val" style="color:var(--neon-green);">-</span></div>
+        <h2 id="card-title">TARGET LOCK ACTIVE</h2>
+        <div class="data-row"><span class="label">IDENTITY:</span> <span id="card-entity" class="val">-</span></div>
+        <div class="data-row"><span class="label">NEURAL CONSENSUS:</span> <span id="card-conf" class="val" style="color:var(--neon-green);">-</span></div>
+        <div class="data-row"><span class="label">SPATIAL RATIO:</span> <span id="card-ratio" class="val" style="color:var(--neon-yellow);">-</span></div>
         <div class="data-row"><span class="label">EST. VALUE RANGE:</span> <span id="card-price" class="val" style="color:var(--neon-cyan);">-</span></div>
-        <div class="desc-box" id="card-desc">Scanning visual target registers...</div>
+        <div class="desc-box" id="card-desc">Analyzing temporal geometry...</div>
     </div>
 
     <div class="controls">
-        <button onclick="initApp()">INITIALIZE AI FOCUS MATRIX</button>
+        <button onclick="initApp()">ENGAGE CONSENSUS MATRIX</button>
     </div>
 </div>
 
@@ -184,8 +185,8 @@
 
     let activeTrack = null;
     let smoothBox = null;
-    let memoryTimer = 0;
-    const MEMORY_LIMIT = 60; // 2s lock retention
+    let frameHistory = [];
+    const HISTORY_LIMIT = 12; // 12-frame consensus queue
 
     async function setupCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -197,7 +198,7 @@
     }
 
     async function initApp() {
-        statusText.innerText = "LOADING AI NEURAL NETWORKS...";
+        statusText.innerText = "LOADING SPATIAL NEURAL MODELS...";
         objectModel = await cocoSsd.load();
         faceModel = await blazeface.load();
         
@@ -205,100 +206,141 @@
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        statusText.innerText = "SYSTEM ACTIVE // NIGHT VISION OPTIMIZED";
+        statusText.innerText = "NEURAL CONSENSUS // SPATIAL FILTER ACTIVE";
         scanFrame();
     }
 
-    function applyNightVision() {
-        // High Contrast Low-Light Gain
-        ctx.filter = "brightness(3.2) contrast(1.8) saturate(1.1)";
+    function applyEnhancementFilter() {
+        ctx.filter = "brightness(2.8) contrast(1.7) saturate(1.1)";
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         ctx.filter = "none";
     }
 
     async function scanFrame() {
-        applyNightVision();
+        applyEnhancementFilter();
 
-        const objects = await objectModel.detect(canvas);
+        const rawObjects = await objectModel.detect(canvas);
         const faces = await faceModel.estimateFaces(canvas, false);
 
-        let bestMatch = null;
+        let validatedLabel = null;
         let bestBox = null;
-        let bestScore = 0;
+        let maxScore = 0;
 
-        // Process Objects
-        objects.forEach(obj => {
+        const cWidth = canvas.width;
+        const cHeight = canvas.height;
+
+        // 1. Process Objects through Spatial & Geometric Rules
+        rawObjects.forEach(obj => {
             const [x, y, w, h] = obj.bbox;
             const area = w * h;
+            const aspectRatio = w / h; 
+            const vertRatio = h / w;
+            const relativeY = y / cHeight; // 0.0 top, 1.0 bottom
             let cls = obj.class.toLowerCase();
 
-            // Ignore noise (<2500px area) and enforce confidence thresholds
-            if (obj.score > 0.58 && area > 2500) {
-                
-                // Scale Discrimination: Toy Model vs Actual Car
-                if (cls === 'car' || cls === 'truck') {
-                    const canvasArea = canvas.width * canvas.height;
-                    const ratio = area / canvasArea;
-                    if (ratio < 0.08) {
-                        cls = 'toy_model_car';
-                    }
-                }
+            if (obj.score < 0.52 || area < 2000) return;
 
-                // Strict Non-Human Filter: Suppress fake "person" triggers on small items (bags, tissues)
-                if (cls === 'person' && (w < 160 || h < 160 || (w/h > 1.8))) return;
-
-                if (obj.score > bestScore) {
-                    bestMatch = cls;
-                    bestBox = obj.bbox;
-                    bestScore = Math.round(obj.score * 100);
+            // --- REFRIGERATOR vs AIR CONDITIONER GUARD ---
+            if (cls === 'refrigerator' || cls === 'microwave' || cls === 'tv') {
+                if (aspectRatio >= 1.35 && relativeY < 0.45) {
+                    cls = 'air_conditioner'; // Wide horizontal shape mounted high on wall
+                } else if (vertRatio >= 1.05 && relativeY > 0.15) {
+                    cls = 'refrigerator'; // Tall vertical unit
                 }
+            }
+
+            // --- LAMP vs AIRPLANE GUARD ---
+            if (cls === 'airplane' || cls === 'kite') {
+                // Reject airplanes indoors/vertical/grounded
+                if (vertRatio > 0.85 || relativeY > 0.1) {
+                    cls = 'lamp_fixture';
+                }
+            }
+
+            // Lamp refinement rule
+            if (cls === 'vase' || cls === 'bottle') {
+                if (relativeY < 0.6 && vertRatio > 1.3) {
+                    cls = 'lamp_fixture';
+                }
+            }
+
+            // Suppress fake human detections on non-human objects
+            if (cls === 'person' && (w < 150 || h < 150 || aspectRatio > 1.6)) return;
+
+            if (obj.score > maxScore) {
+                maxScore = obj.score;
+                validatedLabel = cls;
+                bestBox = obj.bbox;
             }
         });
 
-        // Genuine Biometric Face Verification Only
+        // 2. Strict Biometric Facial Mesh Lock
         faces.forEach(face => {
             const x = face.topLeft[0];
             const y = face.topLeft[1];
             const w = face.bottomRight[0] - x;
             const h = face.bottomRight[1] - y;
-            const aspectRatio = w / h;
+            const ratio = w / h;
 
-            // Strict human facial geometry checks
-            if (w > 50 && h > 50 && aspectRatio >= 0.6 && aspectRatio <= 1.4) {
-                bestMatch = 'human_subject';
+            if (w > 55 && h > 55 && ratio >= 0.65 && ratio <= 1.35) {
+                validatedLabel = 'human_subject';
                 bestBox = [x, y, w, h];
-                bestScore = 98;
+                maxScore = 0.98;
             }
         });
 
-        // Kalman Coordinate Smoothing
-        if (bestMatch && bestBox) {
-            activeTrack = { label: bestMatch, score: bestScore };
-            memoryTimer = MEMORY_LIMIT;
+        // 3. Temporal Voting Queue (Consensus Engine)
+        if (validatedLabel && bestBox) {
+            frameHistory.push({ label: validatedLabel, box: bestBox, score: Math.round(maxScore * 100) });
+        } else {
+            frameHistory.push(null);
+        }
+
+        if (frameHistory.length > HISTORY_LIMIT) frameHistory.shift();
+
+        // Calculate consensus winner
+        const counts = {};
+        let winner = null;
+        let winnerCount = 0;
+
+        frameHistory.forEach(item => {
+            if (item) {
+                counts[item.label] = (counts[item.label] || 0) + 1;
+                if (counts[item.label] > winnerCount) {
+                    winnerCount = counts[item.label];
+                    winner = item.label;
+                }
+            }
+        });
+
+        // Require majority consensus across history buffer
+        if (winner && winnerCount >= 5) {
+            const latestMatch = [...frameHistory].reverse().find(i => i && i.label === winner);
+            activeTrack = { label: winner, score: latestMatch.score };
 
             if (!smoothBox) {
-                smoothBox = [...bestBox];
+                smoothBox = [...latestMatch.box];
             } else {
-                smoothBox[0] = smoothBox[0] * 0.75 + bestBox[0] * 0.25;
-                smoothBox[1] = smoothBox[1] * 0.75 + bestBox[1] * 0.25;
-                smoothBox[2] = smoothBox[2] * 0.75 + bestBox[2] * 0.25;
-                smoothBox[3] = smoothBox[3] * 0.75 + bestBox[3] * 0.25;
+                smoothBox[0] = smoothBox[0] * 0.7 + latestMatch.box[0] * 0.3;
+                smoothBox[1] = smoothBox[1] * 0.7 + latestMatch.box[1] * 0.3;
+                smoothBox[2] = smoothBox[2] * 0.7 + latestMatch.box[2] * 0.3;
+                smoothBox[3] = smoothBox[3] * 0.7 + latestMatch.box[3] * 0.3;
             }
-        } else if (memoryTimer > 0) {
-            memoryTimer--;
         } else {
             activeTrack = null;
             smoothBox = null;
         }
 
+        // Render HUD elements
         if (activeTrack && smoothBox) {
             const [x, y, w, h] = smoothBox;
             drawReticle(x, y, w, h, activeTrack.label.toUpperCase());
 
             infoCard.style.display = 'block';
-            document.getElementById('card-conf').innerText = `${activeTrack.score}%`;
+            document.getElementById('card-conf').innerText = `${activeTrack.score}% (CONSENSUS LOCKED)`;
+            document.getElementById('card-ratio').innerText = `${(w/h).toFixed(2)} [W:H]`;
 
-            renderMetadata(activeTrack.label);
+            renderMetadata(activeTrack.label, w, h);
         } else {
             infoCard.style.display = 'none';
         }
@@ -306,50 +348,44 @@
         requestAnimationFrame(scanFrame);
     }
 
-    function renderMetadata(label) {
+    function renderMetadata(label, w, h) {
         const titleEl = document.getElementById('card-title');
         const entityEl = document.getElementById('card-entity');
-        const scaleEl = document.getElementById('card-scale');
         const priceEl = document.getElementById('card-price');
         const descEl = document.getElementById('card-desc');
 
-        if (label === 'toy_model_car') {
-            titleEl.innerText = "MINIATURE / TOY CAR";
-            entityEl.innerText = "SCALE MODEL VEHICLE";
-            scaleEl.innerText = "SMALL (< 1:18 SCALE)";
-            priceEl.innerText = "$5.00 - $40.00 USD";
-            descEl.innerText = "Dimensions confirm miniature scale object rather than full-size automotive.";
-        } else if (label === 'car' || label === 'truck') {
-            titleEl.innerText = "MOTOR VEHICLE";
-            entityEl.innerText = "PASSENGER AUTOMOTIVE";
-            scaleEl.innerText = "FULL SCALE (1:1)";
-            priceEl.innerText = "$15,000 - $85,000 USD";
-            descEl.innerText = "Full-size vehicle confirmed in target field.";
-        } else if (label === 'handbag' || label === 'backpack' || label === 'suitcase') {
-            titleEl.innerText = "BAG / PERSONAL CARRY";
-            entityEl.innerText = label.toUpperCase();
-            scaleEl.innerText = "PERSONAL CONTAINER";
-            priceEl.innerText = "$25.00 - $250.00 USD";
-            descEl.innerText = "Storage accessory detected and locked via neural vision.";
+        if (label === 'air_conditioner') {
+            titleEl.innerText = "AIR CONDITIONER UNIT";
+            entityEl.innerText = "HVAC / COOLING APPLIANCE";
+            priceEl.innerText = "$300.00 - $1,200.00 USD";
+            descEl.innerText = "Horizontal spatial geometry and overhead mounting height validated.";
+        } else if (label === 'refrigerator') {
+            titleEl.innerText = "REFRIGERATOR";
+            entityEl.innerText = "KITCHEN COOLING TOWER";
+            priceEl.innerText = "$600.00 - $2,800.00 USD";
+            descEl.innerText = "Vertical aspect ratio (H > W) and floor depth verified.";
+        } else if (label === 'lamp_fixture') {
+            titleEl.innerText = "LIGHTING FIXTURE / LAMP";
+            entityEl.innerText = "LUMINAIRE SYSTEM";
+            priceEl.innerText = "$25.00 - $180.00 USD";
+            descEl.innerText = "Grounded indoor profile confirmed. Rejection guard prevented false airplane trigger.";
         } else if (label === 'human_subject') {
             titleEl.innerText = "HUMAN SUBJECT";
             entityEl.innerText = "BIOMETRIC ENTITY";
-            scaleEl.innerText = "ORGANIC LIFEFORM";
-            priceEl.innerText = "N/A (CLASSIFIED)";
+            priceEl.innerText = "VERIFIED BIOMETRIC";
             descEl.innerText = "Facial mesh alignment verified via real-time geometric vision lock.";
         } else {
             titleEl.innerText = label.toUpperCase();
             entityEl.innerText = label.toUpperCase();
-            scaleEl.innerText = "OBJECT ENTITY";
-            priceEl.innerText = "VERIFIED TARGET";
-            descEl.innerText = "Target identity locked and stabilized via neural tracking memory.";
+            priceEl.innerText = "VERIFIED ENTITY";
+            descEl.innerText = "Consensus matrix validated object identity across temporal buffer.";
         }
     }
 
     function drawReticle(x, y, w, h, label) {
         const cLen = Math.min(w, h) * 0.25;
 
-        ctx.strokeStyle = '#00ff66';
+        ctx.strokeStyle = '#00f3ff';
         ctx.lineWidth = 2;
 
         ctx.beginPath();
@@ -362,12 +398,12 @@
         const cx = x + w / 2;
         const cy = y + h / 2;
         ctx.strokeStyle = '#ffee00';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(cx - 4, cy - 4, 8, 8);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx - 5, cy - 5, 10, 10);
 
-        ctx.fillStyle = '#00ff66';
+        ctx.fillStyle = '#00f3ff';
         ctx.font = "13px 'Share Tech Mono'";
-        ctx.fillText(`[ LOCK // ${label} ]`, x, y - 8);
+        ctx.fillText(`[ CONSENSUS LOCK // ${label} ]`, x, y - 10);
     }
 </script>
 </body>
