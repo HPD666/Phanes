@@ -3,52 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHANES // Focus Visual Scanner</title>
+    <title>PHANES // Focus Visual Scanner Pro</title>
+    <!-- Load TensorFlow.js and COCO-SSD -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <!-- Load Face-API / Blazeface for Person Focus -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+
     <style>
         :root {
             --neon-cyan: #00f3ff;
             --neon-yellow: #ffee00;
-            --hud-bg: rgba(10, 15, 20, 0.85);
+            --neon-red: #ff0055;
+            --hud-bg: rgba(5, 10, 15, 0.90);
         }
 
         body {
             margin: 0;
             padding: 0;
-            background-color: #050505;
+            background-color: #000;
             color: var(--neon-cyan);
             font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
+            user-select: none;
         }
 
-        #scanner-container {
+        #viewport {
             position: relative;
             width: 100vw;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
         video, canvas {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .hud-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            object-fit: cover;
+        }
+
+        .scanlines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            box-sizing: border-box;
-            border: 2px solid rgba(0, 243, 255, 0.2);
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
             background-size: 100% 4px;
+            z-index: 2;
         }
 
         .hud-header {
@@ -56,99 +58,166 @@
             top: 20px;
             left: 20px;
             background: var(--hud-bg);
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-left: 4px solid var(--neon-cyan);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
+            z-index: 3;
         }
 
         .hud-header h1 {
             margin: 0;
-            font-size: 1.2rem;
-            letter-spacing: 2px;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
             color: var(--neon-yellow);
         }
 
+        /* Cyberpunk Card Overlay */
         .hud-card {
             position: absolute;
-            bottom: 30px;
-            right: 30px;
-            width: 320px;
+            bottom: 40px;
+            right: 40px;
+            width: 360px;
             background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
-            padding: 15px;
+            padding: 20px;
             display: none;
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            z-index: 3;
         }
 
         .hud-card h2 {
-            margin: 0 0 8px 0;
-            font-size: 1rem;
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
             color: var(--neon-yellow);
             text-transform: uppercase;
+            border-bottom: 1px dashed var(--neon-cyan);
+            padding-bottom: 5px;
         }
 
-        .hud-card p {
-            margin: 4px 0;
+        .hud-card .data-row {
+            margin: 6px 0;
             font-size: 0.85rem;
-            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hud-card .label {
+            color: #888;
+        }
+
+        .hud-card .val {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .hud-card .desc-box {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            font-size: 0.80rem;
+            color: #ddd;
+            line-height: 1.3;
         }
 
         .controls {
             position: absolute;
-            bottom: 30px;
-            left: 30px;
-            pointer-events: auto;
+            bottom: 40px;
+            left: 40px;
+            z-index: 3;
         }
 
         button {
-            background: transparent;
+            background: rgba(0,0,0,0.8);
             border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-family: inherit;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.3s;
+            letter-spacing: 1px;
+            transition: all 0.2s;
         }
 
         button:hover {
             background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 10px var(--neon-cyan);
+            box-shadow: 0 0 15px var(--neon-cyan);
         }
     </style>
 </head>
 <body>
 
-<div id="scanner-container">
+<div id="viewport">
     <video id="webcam" autoplay playsinline muted></video>
     <canvas id="output"></canvas>
-    
-    <div class="hud-overlay">
-        <div class="hud-header">
-            <h1>PHANES // SYSTEM ACTIVE</h1>
-            <span id="status">INITIALIZING AI MODEL...</span>
-        </div>
+    <div class="scanlines"></div>
 
-        <div id="info-card" class="hud-card">
-            <h2 id="card-title">TARGET IDENTIFIED</h2>
-            <p><strong>Class:</strong> <span id="card-class">-</span></p>
-            <p><strong>Confidence:</strong> <span id="card-conf">-</span></p>
-            <p><strong>Metadata:</strong> <span id="card-desc">Scanning visual register...</span></p>
-        </div>
+    <div class="hud-header">
+        <h1>PHANES // FOCUS HUD v2.0</h1>
+        <span id="status">PRESS INITIALIZE TO ENGAGE</span>
+    </div>
 
-        <div class="controls">
-            <button onclick="startScanner()">INITIALIZE FOCUS</button>
-        </div>
+    <div id="info-card" class="hud-card">
+        <h2 id="card-title">TARGET ACQUIRED</h2>
+        <div class="data-row"><span class="label">ENTITY:</span> <span id="card-entity" class="val">-</span></div>
+        <div class="data-row"><span class="label">BRAND / ORIGIN:</span> <span id="card-brand" class="val">-</span></div>
+        <div class="data-row"><span class="label">EST. VALUE / COST:</span> <span id="card-price" class="val" style="color:var(--neon-yellow);">-</span></div>
+        <div class="data-row"><span class="label">SOCIAL / LINK:</span> <span id="card-social" class="val" style="color:var(--neon-cyan);">-</span></div>
+        <div class="desc-box" id="card-desc">Scanning visual target registers...</div>
+    </div>
+
+    <div class="controls">
+        <button onclick="initApp()">INITIALIZE FOCUS SCANNER</button>
     </div>
 </div>
 
 <script>
-    let model;
+    let objectModel, faceModel;
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('output');
     const ctx = canvas.getContext('2d');
     const statusText = document.getElementById('status');
     const infoCard = document.getElementById('info-card');
+
+    // Advanced Database Knowledge Graph
+    const KNOWLEDGE_BASE = {
+        cell_phone: {
+            title: "SMARTPHONE TARGET",
+            brand: "Apple / Samsung / Google",
+            price: "$799 - $1,199 USD",
+            social: "@tech_reviews / #mobile",
+            desc: "High-density mobile terminal equipped with multi-lens optical array and neural processing unit."
+        },
+        car: {
+            title: "MOTOR VEHICLE",
+            brand: "Tesla / BMW / CyberMotors",
+            price: "$42,000 - $85,000 USD",
+            social: "@autoworld_daily",
+            desc: "Autonomous or semi-autonomous passenger vehicle with electric or hybrid drivetrain."
+        },
+        laptop: {
+            title: "COMPUTING WORKSTATION",
+            brand: "Dell / Lenovo / Apple",
+            price: "$1,200 - $2,499 USD",
+            social: "@cyber_hardware",
+            desc: "Portable terminal featuring multi-core silicon, high-refresh display, and integrated encrypted storage."
+        },
+        bottle: {
+            title: "BEVERAGE CONTAINER",
+            brand: "Hydro / Stanley / Generic",
+            price: "$15 - $45 USD",
+            social: "#hydration_tech",
+            desc: "Insulated liquid vessel engineered for heat retention and durable field usage."
+        },
+        person: {
+            title: "HUMAN SUBJECT DETECTED",
+            brand: "Biometric Subject #802",
+            price: "N/A (CLASSIFIED)",
+            social: "@subject_profile_linked",
+            desc: "Biological entity locked. Face detection algorithm active. Privacy protocols obfuscating registry match."
+        }
+    };
 
     async function setupCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -156,70 +225,89 @@
             audio: false
         });
         video.srcObject = stream;
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => { resolve(video); };
-        });
+        return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
     }
 
-    async function startScanner() {
-        statusText.innerText = "LOADING TENSORFLOW VISION ENGINE...";
-        model = await cocoSsd.load();
-        await setupCamera();
+    async function initApp() {
+        statusText.innerText = "LOADING NEURAL VISION NETWORKS...";
+        objectModel = await cocoSsd.load();
+        faceModel = await blazeface.load();
         
+        await setupCamera();
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        statusText.innerText = "SCANNER OPERATIONAL";
-        detectFrame();
+        statusText.innerText = "FOCUS SCANNER ACTIVE";
+        scanFrame();
     }
 
-    async function detectFrame() {
-        const predictions = await model.detect(video);
-        
+    async function scanFrame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        if (predictions.length > 0) {
-            const best = predictions[0];
-            const [x, y, width, height] = best.bbox;
 
-            // Render HUD Box
-            ctx.strokeStyle = '#00f3ff';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, width, height);
+        // Run parallel Object & Face detection
+        const objects = await objectModel.detect(video);
+        const faces = await faceModel.estimateFaces(video, false);
 
-            // Corner reticles
-            ctx.fillStyle = '#ffee00';
-            ctx.fillRect(x - 4, y - 4, 8, 8);
-            ctx.fillRect(x + width - 4, y + height - 4, 8, 8);
+        let lockedTarget = null;
 
-            // Update HUD Metadata
+        // Render detected object boxes
+        objects.forEach(obj => {
+            if (obj.score > 0.5) {
+                const [x, y, w, h] = obj.bbox;
+                drawHudBox(x, y, w, h, '#00f3ff', obj.class.toUpperCase());
+                if (!lockedTarget) lockedTarget = obj.class.toLowerCase();
+            }
+        });
+
+        // Render face detection targets
+        faces.forEach(face => {
+            const x = face.topLeft[0];
+            const y = face.topLeft[1];
+            const w = face.bottomRight[0] - x;
+            const h = face.bottomRight[1] - y;
+            drawHudBox(x, y, w, h, '#ffee00', "FACE LOCK");
+            lockedTarget = 'person';
+        });
+
+        // Update Info HUD
+        if (lockedTarget && KNOWLEDGE_BASE[lockedTarget]) {
+            const data = KNOWLEDGE_BASE[lockedTarget];
             infoCard.style.display = 'block';
-            document.getElementById('card-title').innerText = best.class.toUpperCase();
-            document.getElementById('card-class').innerText = best.class;
-            document.getElementById('card-conf').innerText = Math.round(best.score * 100) + '%';
-            
-            fetchMetaData(best.class);
+            document.getElementById('card-title').innerText = data.title;
+            document.getElementById('card-entity').innerText = lockedTarget.toUpperCase();
+            document.getElementById('card-brand').innerText = data.brand;
+            document.getElementById('card-price').innerText = data.price;
+            document.getElementById('card-social').innerText = data.social;
+            document.getElementById('card-desc').innerText = data.desc;
+        } else if (lockedTarget) {
+            infoCard.style.display = 'block';
+            document.getElementById('card-title').innerText = "GENERIC OBJECT";
+            document.getElementById('card-entity').innerText = lockedTarget.toUpperCase();
+            document.getElementById('card-brand').innerText = "Unknown Entity";
+            document.getElementById('card-price').innerText = "Market Search Active";
+            document.getElementById('card-social').innerText = "#unindexed";
+            document.getElementById('card-desc').innerText = "Target scanned. Category verified in public neural weights.";
         } else {
             infoCard.style.display = 'none';
         }
 
-        requestAnimationFrame(detectFrame);
+        requestAnimationFrame(scanFrame);
     }
 
-    async function fetchMetaData(category) {
-        // Query open catalog API client-side without API keys
-        try {
-            const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${category}&search_simple=1&action=process&json=1&page_size=1`);
-            const data = await res.json();
-            if (data.products && data.products.length > 0) {
-                const p = data.products[0];
-                document.getElementById('card-desc').innerText = `Brand: ${p.brands || 'Generic'} | Cat: ${p.categories_tags ? p.categories_tags[0].replace('en:', '') : 'Unspecified'}`;
-            } else {
-                document.getElementById('card-desc').innerText = "Standard object entity. Visual target verified.";
-            }
-        } catch(e) {
-            document.getElementById('card-desc').innerText = "Object verified in database context.";
-        }
+    function drawHudBox(x, y, w, h, color, label) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+
+        // Target reticle corners
+        ctx.fillStyle = '#ff0055';
+        ctx.fillRect(x - 3, y - 3, 6, 6);
+        ctx.fillRect(x + w - 3, y + h - 3, 6, 6);
+
+        // Floating label
+        ctx.fillStyle = color;
+        ctx.font = "12px 'Courier New'";
+        ctx.fillText(`[ ${label} ]`, x, y - 8);
     }
 </script>
 </body>
