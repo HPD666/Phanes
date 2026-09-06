@@ -1,5 +1,0 @@
-opencv-python
-ultralytics
-duckduckgo_search
-numpy
-pillow
