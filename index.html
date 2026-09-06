@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>phanes.   </title>
+    <title>PHANES // Focus HUD Matrix Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
@@ -12,8 +12,10 @@
     <style>
         :root {
             --neon-cyan: #00f3ff;
+            --neon-green: #00ff66;
             --neon-yellow: #ffee00;
-            --hud-bg: rgba(5, 12, 20, 0.92);
+            --neon-red: #ff0055;
+            --hud-bg: rgba(2, 8, 14, 0.92);
         }
 
         * { box-sizing: border-box; }
@@ -43,30 +45,24 @@
             object-fit: cover;
         }
 
-        /* Clean Frame Border */
-        .corner-frame {
+        /* Tactical Framing Overlay */
+        .hud-border {
             position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 2px solid var(--neon-cyan);
-            z-index: 3;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 2px solid rgba(0, 243, 255, 0.2);
             pointer-events: none;
-            opacity: 0.8;
+            z-index: 2;
         }
-        .top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
-        .top-right { top: 20px; right: 20px; border-left: none; border-bottom: none; }
-        .bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; }
-        .bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; }
 
-        /* Tactical Header Bar */
         .hud-header {
             position: absolute;
             top: 25px;
-            left: 60px;
+            left: 35px;
             background: var(--hud-bg);
-            padding: 10px 20px;
+            padding: 10px 22px;
             border-left: 4px solid var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
             z-index: 3;
         }
 
@@ -74,39 +70,41 @@
             margin: 0;
             font-size: 1.1rem;
             letter-spacing: 2px;
-            color: var(--neon-yellow);
+            color: var(--neon-cyan);
         }
 
         .hud-header span {
             font-size: 0.75rem;
-            color: var(--neon-cyan);
+            color: var(--neon-green);
         }
 
-        /* Instant Clean HUD Info Panel */
+        /* Focus Card HUD */
         .hud-card {
             position: absolute;
             bottom: 35px;
             right: 35px;
-            width: 380px;
+            width: 390px;
             background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
-            padding: 18px;
+            padding: 20px;
             display: none;
-            box-shadow: 0 0 25px rgba(0, 243, 255, 0.25);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
             z-index: 3;
+            backdrop-filter: blur(8px);
         }
 
         .hud-card h2 {
-            margin: 0 0 10px 0;
-            font-size: 1.1rem;
+            margin: 0 0 12px 0;
+            font-size: 1.15rem;
             color: var(--neon-yellow);
             text-transform: uppercase;
-            border-bottom: 1px solid rgba(0, 243, 255, 0.4);
-            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            padding-bottom: 6px;
+            letter-spacing: 1px;
         }
 
         .hud-card .data-row {
-            margin: 6px 0;
+            margin: 7px 0;
             font-size: 0.88rem;
             display: flex;
             justify-content: space-between;
@@ -116,13 +114,13 @@
         .hud-card .val { color: #fff; font-weight: bold; }
 
         .desc-box {
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 12px;
+            padding: 10px 12px;
             background: rgba(0, 243, 255, 0.05);
-            border-left: 2px solid var(--neon-cyan);
+            border-left: 3px solid var(--neon-cyan);
             font-size: 0.82rem;
             color: #d1e0ea;
-            line-height: 1.35;
+            line-height: 1.4;
         }
 
         .controls {
@@ -136,18 +134,18 @@
             background: var(--hud-bg);
             border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
-            padding: 12px 28px;
+            padding: 14px 32px;
             font-family: inherit;
             font-size: 0.95rem;
             cursor: pointer;
             letter-spacing: 2px;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
         }
 
         button:hover {
             background: var(--neon-cyan);
             color: #000;
-            box-shadow: 0 0 20px var(--neon-cyan);
+            box-shadow: 0 0 25px var(--neon-cyan);
             font-weight: bold;
         }
     </style>
@@ -158,28 +156,24 @@
     <video id="webcam" autoplay playsinline muted></video>
     <canvas id="output"></canvas>
     
-    <div class="corner-frame top-left"></div>
-    <div class="corner-frame top-right"></div>
-    <div class="corner-frame bottom-left"></div>
-    <div class="corner-frame bottom-right"></div>
+    <div class="hud-border"></div>
 
     <div class="hud-header">
-        <h1>PHANES // FOCUS HUD v4.0</h1>
-        <span id="status">PRESS INITIALIZE TO ENGAGE</span>
+        <h1>PHANES // FOCUS MATRIX v6.0</h1>
+        <span id="status">STANDBY // PRESS INITIALIZE</span>
     </div>
 
     <div id="info-card" class="hud-card">
         <h2 id="card-title">TARGET ACQUIRED</h2>
-        <div class="data-row"><span class="label">ENTITY:</span> <span id="card-entity" class="val">-</span></div>
-        <div class="data-row"><span class="label">CONFIDENCE:</span> <span id="card-conf" class="val" style="color:var(--neon-yellow);">-</span></div>
-        <div class="data-row"><span class="label">BRAND / ORIGIN:</span> <span id="card-brand" class="val">-</span></div>
-        <div class="data-row"><span class="label">EST. VALUE / COST:</span> <span id="card-price" class="val" style="color:var(--neon-yellow);">-</span></div>
-        <div class="data-row"><span class="label">SOCIAL / LINK:</span> <span id="card-social" class="val" style="color:var(--neon-cyan);">-</span></div>
+        <div class="data-row"><span class="label">CLASSIFICATION:</span> <span id="card-entity" class="val">-</span></div>
+        <div class="data-row"><span class="label">LOCK CONFIDENCE:</span> <span id="card-conf" class="val" style="color:var(--neon-yellow);">-</span></div>
+        <div class="data-row"><span class="label">SCALE ESTIMATE:</span> <span id="card-scale" class="val" style="color:var(--neon-green);">-</span></div>
+        <div class="data-row"><span class="label">VALUE RANGE:</span> <span id="card-price" class="val" style="color:var(--neon-cyan);">-</span></div>
         <div class="desc-box" id="card-desc">Scanning visual target registers...</div>
     </div>
 
     <div class="controls">
-        <button onclick="initApp()">INITIALIZE FOCUS</button>
+        <button onclick="initApp()">ENGAGE TACTICAL FOCUS</button>
     </div>
 </div>
 
@@ -191,54 +185,11 @@
     const statusText = document.getElementById('status');
     const infoCard = document.getElementById('info-card');
 
-    let currentLockedTarget = null;
-    let targetBox = null;
-    let currentScore = 0;
-
-    const KNOWLEDGE_BASE = {
-        cell_phone: {
-            title: "SMARTPHONE TARGET",
-            brand: "Apple / Samsung / Google",
-            price: "$799 - $1,199 USD",
-            social: "@tech_reviews / #mobile",
-            desc: "High-density mobile terminal equipped with multi-lens optical array and neural processing unit."
-        },
-        car: {
-            title: "MOTOR VEHICLE",
-            brand: "Tesla / BMW / CyberMotors",
-            price: "$42,000 - $85,000 USD",
-            social: "@autoworld_daily",
-            desc: "Autonomous or semi-autonomous passenger vehicle with electric or hybrid drivetrain."
-        },
-        laptop: {
-            title: "COMPUTING WORKSTATION",
-            brand: "Dell / Lenovo / Apple",
-            price: "$1,200 - $2,499 USD",
-            social: "@cyber_hardware",
-            desc: "Portable terminal featuring multi-core silicon, high-refresh display, and integrated encrypted storage."
-        },
-        bottle: {
-            title: "BEVERAGE CONTAINER",
-            brand: "Hydro / Stanley / Generic",
-            price: "$15 - $45 USD",
-            social: "#hydration_tech",
-            desc: "Insulated liquid vessel engineered for heat retention and durable field usage."
-        },
-        handbag: {
-            title: "BAG / ACCESSORY",
-            brand: "Gucci / Nike / Generic",
-            price: "$60 - $350 USD",
-            social: "#fashion_carry",
-            desc: "Storage carry pouch or bag designed for personal transport."
-        },
-        person: {
-            title: "HUMAN SUBJECT DETECTED",
-            brand: "Biometric Subject",
-            price: "N/A (CLASSIFIED)",
-            social: "@subject_profile_linked",
-            desc: "Biological entity locked via neural vision face-mesh verification."
-        }
-    };
+    // Smooth Tracking State
+    let activeTrack = null;
+    let smoothBox = null;
+    let memoryTimer = 0;
+    const MEMORY_LIMIT = 60; // Persistence memory (~2 seconds)
 
     async function setupCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -250,7 +201,7 @@
     }
 
     async function initApp() {
-        statusText.innerText = "LOADING NEURAL VISION NETWORKS...";
+        statusText.innerText = "LOADING NEURAL VISION ENGINES...";
         objectModel = await cocoSsd.load();
         faceModel = await blazeface.load();
         
@@ -258,89 +209,109 @@
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        statusText.innerText = "NIGHT VISION & FOCUS ENGAGED";
+        statusText.innerText = "SYSTEM ACTIVE // NIGHT VISION OPTIMIZED";
         scanFrame();
     }
 
-    // Dynamic Low-Light Brightness Gain Filter
-    function applyLowLightEnhancement() {
-        ctx.filter = "brightness(1.5) contrast(1.3) saturate(1.1)";
+    function applyAdaptiveNightVision() {
+        // High Dynamic Contrast & Brightness Enhancement for Low Light
+        ctx.filter = "brightness(2.4) contrast(1.7) saturate(1.2)";
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        ctx.filter = "none"; // Reset filter for HUD rendering
+        ctx.filter = "none";
+    }
+
+    function computeIoU(b1, b2) {
+        const x1 = Math.max(b1[0], b2[0]);
+        const y1 = Math.max(b1[1], b2[1]);
+        const x2 = Math.min(b1[0] + b1[2], b2[0] + b2[2]);
+        const y2 = Math.min(b1[1] + b1[3], b2[1] + b2[3]);
+        const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+        const union = (b1[2] * b1[3]) + (b2[2] * b2[3]) - inter;
+        return inter / union;
     }
 
     async function scanFrame() {
-        // Draw low-light video enhancement onto canvas
-        applyLowLightEnhancement();
+        applyAdaptiveNightVision();
 
         const objects = await objectModel.detect(canvas);
         const faces = await faceModel.estimateFaces(canvas, false);
 
-        let detectedInFrame = null;
-        let detectedBox = null;
-        let score = 0;
+        let bestMatch = null;
+        let bestBox = null;
+        let bestScore = 0;
 
-        // Strict Object Verification (Eliminates false positives like tissues/bags)
+        // Process Object Detections
         objects.forEach(obj => {
             const [x, y, w, h] = obj.bbox;
             const area = w * h;
-            
-            // Rejects tiny shadow shapes and requires >65% confidence
-            if (obj.score > 0.65 && area > 2500 && !detectedInFrame) {
-                // Ignore accidental person detections on small objects (e.g. tissues)
-                if (obj.class === 'person' && (w < 120 || h < 120)) return;
-                
-                detectedInFrame = obj.class.toLowerCase();
-                detectedBox = obj.bbox;
-                score = Math.round(obj.score * 100);
-            }
-        });
+            let cls = obj.class.toLowerCase();
 
-        // Face Biometric Override
-        faces.forEach(face => {
-            if (!detectedInFrame) {
-                const x = face.topLeft[0];
-                const y = face.topLeft[1];
-                const w = face.bottomRight[0] - x;
-                const h = face.bottomRight[1] - y;
+            // Ignore tiny noise detections (< 2000px area)
+            if (obj.score > 0.55 && area > 2000) {
                 
-                // Real human face verification
-                if (w > 40 && h > 40) {
-                    detectedInFrame = 'person';
-                    detectedBox = [x, y, w, h];
-                    score = 98;
+                // Scale Discrimination: Toy Model vs Actual Vehicle
+                if (cls === 'car' || cls === 'truck') {
+                    const canvasArea = canvas.width * canvas.height;
+                    const ratio = area / canvasArea;
+                    if (ratio < 0.08) {
+                        cls = 'miniature_toy_car';
+                    }
+                }
+
+                // Ignore false "person" triggers on small hand-held items
+                if (cls === 'person' && (w < 140 || h < 140)) return;
+
+                if (obj.score > bestScore) {
+                    bestMatch = cls;
+                    bestBox = obj.bbox;
+                    bestScore = Math.round(obj.score * 100);
                 }
             }
         });
 
-        currentLockedTarget = detectedInFrame;
-        targetBox = detectedBox;
-        currentScore = score;
+        // Face Detection Override for Real Humans
+        faces.forEach(face => {
+            const x = face.topLeft[0];
+            const y = face.topLeft[1];
+            const w = face.bottomRight[0] - x;
+            const h = face.bottomRight[1] - y;
+            if (w > 35 && h > 35) {
+                bestMatch = 'human_subject';
+                bestBox = [x, y, w, h];
+                bestScore = 98;
+            }
+        });
 
-        // Instant Information HUD Updating
-        if (currentLockedTarget && targetBox) {
-            const [x, y, w, h] = targetBox;
-            
-            drawTargetReticle(x, y, w, h, currentLockedTarget.toUpperCase());
+        // Memory Lock & Smooth Kalman Interpolation
+        if (bestMatch && bestBox) {
+            activeTrack = { label: bestMatch, score: bestScore };
+            memoryTimer = MEMORY_LIMIT;
+
+            if (!smoothBox) {
+                smoothBox = [...bestBox];
+            } else {
+                // Smooth bounding box jitter
+                smoothBox[0] = smoothBox[0] * 0.75 + bestBox[0] * 0.25;
+                smoothBox[1] = smoothBox[1] * 0.75 + bestBox[1] * 0.25;
+                smoothBox[2] = smoothBox[2] * 0.75 + bestBox[2] * 0.25;
+                smoothBox[3] = smoothBox[3] * 0.75 + bestBox[3] * 0.25;
+            }
+        } else if (memoryTimer > 0) {
+            memoryTimer--; // Maintain lock during quick panning
+        } else {
+            activeTrack = null;
+            smoothBox = null;
+        }
+
+        // Render HUD Reticle & Information Card
+        if (activeTrack && smoothBox) {
+            const [x, y, w, h] = smoothBox;
+            drawReticle(x, y, w, h, activeTrack.label.toUpperCase());
 
             infoCard.style.display = 'block';
-            document.getElementById('card-conf').innerText = `${currentScore}%`;
+            document.getElementById('card-conf').innerText = `${activeTrack.score}%`;
 
-            const data = KNOWLEDGE_BASE[currentLockedTarget] || {
-                title: "VERIFIED OBJECT",
-                brand: "Standard Entity",
-                price: "$10 - $150 USD",
-                social: "#unindexed_item",
-                desc: "Target identity confirmed via local neural weights."
-            };
-
-            document.getElementById('card-title').innerText = data.title;
-            document.getElementById('card-entity').innerText = currentLockedTarget.toUpperCase();
-            document.getElementById('card-brand').innerText = data.brand;
-            document.getElementById('card-price').innerText = data.price;
-            document.getElementById('card-social').innerText = data.social;
-            document.getElementById('card-desc').innerText = data.desc;
-
+            renderMetadata(activeTrack.label, w * h);
         } else {
             infoCard.style.display = 'none';
         }
@@ -348,30 +319,65 @@
         requestAnimationFrame(scanFrame);
     }
 
-    function drawTargetReticle(x, y, w, h, label) {
-        const cornerLen = Math.min(w, h) * 0.25;
+    function renderMetadata(label, area) {
+        const titleEl = document.getElementById('card-title');
+        const entityEl = document.getElementById('card-entity');
+        const scaleEl = document.getElementById('card-scale');
+        const priceEl = document.getElementById('card-price');
+        const descEl = document.getElementById('card-desc');
+
+        if (label === 'miniature_toy_car') {
+            titleEl.innerText = "MINIATURE / TOY VEHICLE";
+            entityEl.innerText = "SCALE MODEL CAR";
+            scaleEl.innerText = "SMALL (< 1:18 SCALE)";
+            priceEl.innerText = "$5.00 - $40.00 USD";
+            descEl.innerText = "Target scale ratio confirms non-occupant miniature or die-cast toy vehicle.";
+        } else if (label === 'car' || label === 'truck') {
+            titleEl.innerText = "PASSENGER AUTOMOTIVE";
+            entityEl.innerText = "MOTOR VEHICLE";
+            scaleEl.innerText = "FULL SCALE (1:1)";
+            priceEl.innerText = "$15,000 - $85,000 USD";
+            descEl.innerText = "Full-size automotive target confirmed in spatial field.";
+        } else if (label === 'human_subject' || label === 'person') {
+            titleEl.innerText = "HUMAN SUBJECT";
+            entityEl.innerText = "BIOMETRIC ENTITY";
+            scaleEl.innerText = "ORGANIC LIFEFORM";
+            priceEl.innerText = "CLASSIFIED";
+            descEl.innerText = "Facial mesh & structure verified via neural vision lock.";
+        } else {
+            titleEl.innerText = label.toUpperCase();
+            entityEl.innerText = label.toUpperCase();
+            scaleEl.innerText = "STANDARD FIELD";
+            priceEl.innerText = "VERIFIED ITEM";
+            descEl.innerText = "Target identity locked and tracked via optical memory matrix.";
+        }
+    }
+
+    function drawReticle(x, y, w, h, label) {
+        const cLen = Math.min(w, h) * 0.25;
 
         ctx.strokeStyle = '#00f3ff';
         ctx.lineWidth = 2;
 
-        // Target Corners
+        // Dynamic Tactical Corner Brackets
         ctx.beginPath();
-        ctx.moveTo(x, y + cornerLen); ctx.lineTo(x, y); ctx.lineTo(x + cornerLen, y);
-        ctx.moveTo(x + w - cornerLen, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + cornerLen);
-        ctx.moveTo(x, y + h - cornerLen); ctx.lineTo(x, y + h); ctx.lineTo(x + cornerLen, y + h);
-        ctx.moveTo(x + w - cornerLen, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - cornerLen);
+        ctx.moveTo(x, y + cLen); ctx.lineTo(x, y); ctx.lineTo(x + cLen, y);
+        ctx.moveTo(x + w - cLen, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + cLen);
+        ctx.moveTo(x, y + h - cLen); ctx.lineTo(x, y + h); ctx.lineTo(x + cLen, y + h);
+        ctx.moveTo(x + w - cLen, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - cLen);
         ctx.stroke();
 
-        // Center Aim Box
+        // Center Aim Indicator
         const cx = x + w / 2;
         const cy = y + h / 2;
         ctx.strokeStyle = '#ffee00';
-        ctx.strokeRect(cx - 5, cy - 5, 10, 10);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 4, cy - 4, 8, 8);
 
-        // Instant HUD Text Tag
+        // Label Tag
         ctx.fillStyle = '#00f3ff';
         ctx.font = "13px 'Share Tech Mono'";
-        ctx.fillText(`[ ${label} ]`, x, y - 8);
+        ctx.fillText(`[ LOCK // ${label} ]`, x, y - 8);
     }
 </script>
 </body>
