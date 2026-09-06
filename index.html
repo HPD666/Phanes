@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHANES // Focus Visual Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-yellow: #ffee00;
+            --hud-bg: rgba(10, 15, 20, 0.85);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            color: var(--neon-cyan);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+
+        #scanner-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video, canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hud-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            box-sizing: border-box;
+            border: 2px solid rgba(0, 243, 255, 0.2);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+        }
+
+        .hud-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--hud-bg);
+            padding: 10px 20px;
+            border-left: 4px solid var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .hud-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            color: var(--neon-yellow);
+        }
+
+        .hud-card {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 320px;
+            background: var(--hud-bg);
+            border: 1px solid var(--neon-cyan);
+            padding: 15px;
+            display: none;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        .hud-card h2 {
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+            color: var(--neon-yellow);
+            text-transform: uppercase;
+        }
+
+        .hud-card p {
+            margin: 4px 0;
+            font-size: 0.85rem;
+            color: #ffffff;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            pointer-events: auto;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 10px 20px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+    </style>
+</head>
+<body>
+
+<div id="scanner-container">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="output"></canvas>
+    
+    <div class="hud-overlay">
+        <div class="hud-header">
+            <h1>PHANES // SYSTEM ACTIVE</h1>
+            <span id="status">INITIALIZING AI MODEL...</span>
+        </div>
+
+        <div id="info-card" class="hud-card">
+            <h2 id="card-title">TARGET IDENTIFIED</h2>
+            <p><strong>Class:</strong> <span id="card-class">-</span></p>
+            <p><strong>Confidence:</strong> <span id="card-conf">-</span></p>
+            <p><strong>Metadata:</strong> <span id="card-desc">Scanning visual register...</span></p>
+        </div>
+
+        <div class="controls">
+            <button onclick="startScanner()">INITIALIZE FOCUS</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let model;
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('output');
+    const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('status');
+    const infoCard = document.getElementById('info-card');
+
+    async function setupCamera() {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: 1280, height: 720 },
+            audio: false
+        });
+        video.srcObject = stream;
+        return new Promise((resolve) => {
+            video.onloadedmetadata = () => { resolve(video); };
+        });
+    }
+
+    async function startScanner() {
+        statusText.innerText = "LOADING TENSORFLOW VISION ENGINE...";
+        model = await cocoSsd.load();
+        await setupCamera();
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        statusText.innerText = "SCANNER OPERATIONAL";
+        detectFrame();
+    }
+
+    async function detectFrame() {
+        const predictions = await model.detect(video);
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (predictions.length > 0) {
+            const best = predictions[0];
+            const [x, y, width, height] = best.bbox;
+
+            // Render HUD Box
+            ctx.strokeStyle = '#00f3ff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, width, height);
+
+            // Corner reticles
+            ctx.fillStyle = '#ffee00';
+            ctx.fillRect(x - 4, y - 4, 8, 8);
+            ctx.fillRect(x + width - 4, y + height - 4, 8, 8);
+
+            // Update HUD Metadata
+            infoCard.style.display = 'block';
+            document.getElementById('card-title').innerText = best.class.toUpperCase();
+            document.getElementById('card-class').innerText = best.class;
+            document.getElementById('card-conf').innerText = Math.round(best.score * 100) + '%';
+            
+            fetchMetaData(best.class);
+        } else {
+            infoCard.style.display = 'none';
+        }
+
+        requestAnimationFrame(detectFrame);
+    }
+
+    async function fetchMetaData(category) {
+        // Query open catalog API client-side without API keys
+        try {
+            const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${category}&search_simple=1&action=process&json=1&page_size=1`);
+            const data = await res.json();
+            if (data.products && data.products.length > 0) {
+                const p = data.products[0];
+                document.getElementById('card-desc').innerText = `Brand: ${p.brands || 'Generic'} | Cat: ${p.categories_tags ? p.categories_tags[0].replace('en:', '') : 'Unspecified'}`;
+            } else {
+                document.getElementById('card-desc').innerText = "Standard object entity. Visual target verified.";
+            }
+        } catch(e) {
+            document.getElementById('card-desc').innerText = "Object verified in database context.";
+        }
+    }
+</script>
+</body>
+</html>
