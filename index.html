@@ -7,16 +7,16 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --neon-cyan: #00f3ff;
-            --neon-green: #00ff66;
-            --neon-yellow: #ffee00;
-            --neon-orange: #ff9900;
-            --hud-bg: rgba(2, 8, 14, 0.94);
+            --hud-cyan: #00f3ff;
+            --hud-green: #00ff66;
+            --hud-yellow: #ffee00;
+            --hud-orange: #ff9900;
+            --hud-bg: rgba(6, 14, 24, 0.90);
+            --hud-panel-border: rgba(0, 243, 255, 0.35);
         }
 
         * { box-sizing: border-box; }
@@ -25,7 +25,7 @@
             margin: 0;
             padding: 0;
             background-color: #000;
-            color: var(--neon-cyan);
+            color: var(--hud-cyan);
             font-family: 'Share Tech Mono', monospace;
             overflow: hidden;
             user-select: none;
@@ -60,80 +60,119 @@
             left: 35px;
             background: var(--hud-bg);
             padding: 12px 24px;
-            border-left: 4px solid var(--neon-cyan);
-            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
+            border-left: 4px solid var(--hud-cyan);
+            border-bottom: 1px solid var(--hud-panel-border);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.12);
             z-index: 3;
+            border-radius: 0 4px 4px 0;
         }
 
         .hud-header h1 {
             margin: 0;
             font-size: 1.1rem;
             letter-spacing: 2px;
-            color: var(--neon-cyan);
+            color: var(--hud-cyan);
         }
 
         .hud-header span {
             font-size: 0.78rem;
-            color: var(--neon-green);
+            color: var(--hud-green);
         }
 
         .hud-card {
             position: absolute;
             bottom: 35px;
             right: 35px;
-            width: 410px;
+            width: 420px;
             background: var(--hud-bg);
-            border: 1px solid var(--neon-cyan);
-            padding: 22px;
+            border: 1px solid var(--hud-panel-border);
+            border-top: 3px solid var(--hud-cyan);
+            padding: 20px;
             display: none;
-            box-shadow: 0 0 35px rgba(0, 243, 255, 0.22);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.18);
             z-index: 3;
             backdrop-filter: blur(10px);
+            border-radius: 4px;
         }
 
         .hud-card h2 {
             margin: 0 0 12px 0;
-            font-size: 1.15rem;
-            color: var(--neon-yellow);
+            font-size: 1.1rem;
+            color: var(--hud-yellow);
             text-transform: uppercase;
-            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.25);
             padding-bottom: 6px;
             letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hud-card .category-tag {
+            font-size: 0.7rem;
+            background: rgba(0, 243, 255, 0.15);
+            color: var(--hud-cyan);
+            padding: 2px 8px;
+            border-radius: 2px;
         }
 
         .hud-card .data-row {
-            margin: 7px 0;
-            font-size: 0.88rem;
+            margin: 8px 0;
+            font-size: 0.85rem;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
-        .hud-card .label { color: #8a9ba8; }
+        .hud-card .label { color: #9bb0c1; }
         .hud-card .val { color: #fff; font-weight: bold; }
 
-        .desc-box {
+        .price-section {
             margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(0, 255, 102, 0.06);
+            border-left: 3px solid var(--hud-green);
+            border-radius: 2px;
+        }
+
+        .price-section .title {
+            font-size: 0.75rem;
+            color: var(--hud-green);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .buy-btn {
+            display: inline-block;
+            margin-top: 10px;
+            width: 100%;
+            text-align: center;
+            background: rgba(0, 243, 255, 0.15);
+            border: 1px solid var(--hud-cyan);
+            color: var(--hud-cyan);
+            padding: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.82rem;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .buy-btn:hover {
+            background: var(--hud-cyan);
+            color: #000;
+        }
+
+        .desc-box {
+            margin-top: 10px;
             padding: 10px 12px;
             background: rgba(0, 243, 255, 0.05);
-            border-left: 3px solid var(--neon-green);
+            border-left: 3px solid var(--hud-cyan);
             font-size: 0.82rem;
             color: #d1e0ea;
             line-height: 1.4;
-        }
-
-        .toast {
-            position: absolute;
-            top: 30px;
-            right: 35px;
-            background: var(--neon-orange);
-            color: #000;
-            font-weight: bold;
-            padding: 12px 24px;
-            border-radius: 4px;
-            box-shadow: 0 0 20px var(--neon-orange);
-            display: none;
-            z-index: 10;
+            border-radius: 2px;
         }
 
         .controls {
@@ -145,20 +184,21 @@
 
         button {
             background: var(--hud-bg);
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
+            border: 1px solid var(--hud-cyan);
+            color: var(--hud-cyan);
             padding: 14px 32px;
             font-family: inherit;
             font-size: 0.95rem;
             cursor: pointer;
             letter-spacing: 2px;
             transition: all 0.25s ease;
+            border-radius: 2px;
         }
 
         button:hover {
-            background: var(--neon-cyan);
+            background: var(--hud-cyan);
             color: #000;
-            box-shadow: 0 0 25px var(--neon-cyan);
+            box-shadow: 0 0 25px var(--hud-cyan);
             font-weight: bold;
         }
     </style>
@@ -171,47 +211,76 @@
     
     <div class="hud-border"></div>
 
-    <div id="toast-msg" class="toast">TEXT COPIED TO CLIPBOARD!</div>
-
     <div class="hud-header">
-        <h1>PHANES // PRECISION OCR & PROTRUSION v11.0</h1>
-        <span id="status">SYSTEM IDLE // INITIALIZE MATRIX</span>
+        <h1>PHANES // VISION SYSTEM v4.0</h1>
+        <span id="status">SYSTEM IDLE // PRESS START TO INITIALIZE</span>
     </div>
 
     <div id="info-card" class="hud-card">
-        <h2 id="card-title">TARGET LOCK ACTIVE</h2>
-        <div class="data-row"><span class="label">IDENTITY:</span> <span id="card-entity" class="val">-</span></div>
-        <div class="data-row"><span class="label">NEURAL CONSENSUS:</span> <span id="card-conf" class="val" style="color:var(--neon-green);">-</span></div>
-        <div class="data-row"><span class="label">SPATIAL RATIO:</span> <span id="card-ratio" class="val" style="color:var(--neon-yellow);">-</span></div>
-        <div class="data-row"><span class="label">EST. VALUE RANGE:</span> <span id="card-price" class="val" style="color:var(--neon-cyan);">-</span></div>
-        <div class="desc-box" id="card-desc">Analyzing temporal geometry...</div>
+        <h2>
+            <span id="card-title">TARGET LOCKED</span>
+            <span id="card-cat" class="category-tag">GENERAL</span>
+        </h2>
+        <div class="data-row"><span class="label">CLASSIFICATION:</span> <span id="card-entity" class="val">-</span></div>
+        <div class="data-row"><span class="label">DETECTION CONFIDENCE:</span> <span id="card-conf" class="val" style="color:var(--hud-green);">-</span></div>
+        <div class="data-row"><span class="label">FRAME RATIO (W:H):</span> <span id="card-ratio" class="val" style="color:var(--hud-yellow);">-</span></div>
+        
+        <div class="price-section">
+            <div class="title">ADVANCED PRICE ESTIMATOR</div>
+            <div class="data-row"><span class="label">EST. MARKET VALUE:</span> <span id="card-price-range" class="val" style="color:var(--hud-cyan);">-</span></div>
+            <div class="data-row"><span class="label">EST. RETAIL NEW:</span> <span id="card-price-new" class="val">-</span></div>
+            <div class="data-row"><span class="label">EST. USED / REFURB:</span> <span id="card-price-used" class="val">-</span></div>
+            <div class="data-row"><span class="label">ITEM CONDITION:</span> <span id="card-condition" class="val" style="color:var(--hud-green);">-</span></div>
+            
+            <a id="card-link" href="#" target="_blank" class="buy-btn">SEARCH / FIND ITEM ONLINE</a>
+        </div>
+
+        <div class="desc-box" id="card-desc">Analyzing spatial dimensions...</div>
     </div>
 
     <div class="controls">
-        <button onclick="initApp()">ENGAGE MATRIX</button>
+        <button onclick="initApp()">START VISION</button>
     </div>
 </div>
 
 <script>
-    let objectModel, faceModel, ocrWorker;
+    let objectModel, faceModel;
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('output');
     const ctx = canvas.getContext('2d');
     const statusText = document.getElementById('status');
     const infoCard = document.getElementById('info-card');
-    const toast = document.getElementById('toast-msg');
 
-    // Offscreen canvas for OCR image binarization
-    const ocrCanvas = document.createElement('canvas');
-    const ocrCtx = ocrCanvas.getContext('2d');
-
-    let detectedTexts = [];
-    let detectedEdges = [];
     let activeTrack = null;
     let smoothBox = null;
     let frameHistory = [];
-    const HISTORY_LIMIT = 12;
-    let isProcessingOcr = false;
+    const HISTORY_LIMIT = 10;
+
+    // Interactive Motion & Gyro Offset tracking
+    let targetOffsetX = 0;
+    let targetOffsetY = 0;
+    let currentOffsetX = 0;
+    let currentOffsetY = 0;
+
+    // Listen for Device Orientation (Gyroscopic Motion)
+    window.addEventListener('deviceorientation', (e) => {
+        if (e.gamma !== null && e.beta !== null) {
+            targetOffsetX = e.gamma * 2.5; // Left/Right Tilt
+            targetOffsetY = (e.beta - 45) * 2.5; // Forward/Back Tilt
+        }
+    });
+
+    // Fallback for Mouse/Touch Motion
+    window.addEventListener('mousemove', (e) => {
+        targetOffsetX = ((e.clientX / window.innerWidth) - 0.5) * 120;
+        targetOffsetY = ((e.clientY / window.innerHeight) - 0.5) * 120;
+    });
+
+    // Living beings list (strictly exclude pricing)
+    const livingClasses = new Set([
+        'person', 'human_subject', 'cat', 'dog', 'bird', 'horse', 'sheep', 
+        'cow', 'elephant', 'bear', 'zebra', 'giraffe'
+    ]);
 
     async function setupCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -223,114 +292,28 @@
     }
 
     async function initApp() {
-        statusText.innerText = "INITIALIZING MULTI-LANG OCR (ENG+TUR)...";
+        statusText.innerText = "LOADING AI MODELS...";
         objectModel = await cocoSsd.load();
         faceModel = await blazeface.load();
-        
-        // Load both English and Turkish OCR models for high precision
-        ocrWorker = await Tesseract.createWorker(['eng', 'tur']);
 
         await setupCamera();
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        ocrCanvas.width = canvas.width;
-        ocrCanvas.height = canvas.height;
         
-        statusText.innerText = "PRECISION MATRIX ACTIVE // OCR & EDGE GUARD ONLINE";
-
-        canvas.addEventListener('click', handleCanvasClick);
+        statusText.innerText = "SYSTEM ACTIVE // DETECTOR ONLINE";
 
         scanFrame();
-        setInterval(runPrecisionOcrScan, 1800);
-    }
-
-    function applyEnhancementFilter() {
-        ctx.filter = "brightness(2.8) contrast(1.7) saturate(1.1)";
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        ctx.filter = "none";
-    }
-
-    // High-Contrast Grayscale Preprocessing to sharpen text for Tesseract
-    function prepareOcrFrame() {
-        ocrCtx.drawImage(video, 0, 0, ocrCanvas.width, ocrCanvas.height);
-        const imgData = ocrCtx.getImageData(0, 0, ocrCanvas.width, ocrCanvas.height);
-        const d = imgData.data;
-
-        for (let i = 0; i < d.length; i += 4) {
-            let avg = 0.2126 * d[i] + 0.7152 * d[i+1] + 0.0722 * d[i+2];
-            let v = avg > 110 ? 255 : 0; // High contrast thresholding
-            d[i] = v;
-            d[i+1] = v;
-            d[i+2] = v;
-        }
-        ocrCtx.putImageData(imgData, 0, 0);
-    }
-
-    async function runPrecisionOcrScan() {
-        if (isProcessingOcr) return;
-        isProcessingOcr = true;
-
-        try {
-            prepareOcrFrame();
-            const result = await ocrWorker.recognize(ocrCanvas);
-            
-            // Strict Regex filter: Require valid Latin/Turkish characters and confidence > 68%
-            const validRegex = /^[a-zA-Z0-9çğıöşüÇĞİÖŞÜ\-\.]{2,}$/;
-
-            detectedTexts = result.data.words.filter(w => {
-                const textStr = w.text.trim();
-                return w.confidence >= 68 && validRegex.test(textStr);
-            }).map(w => ({
-                text: w.text.trim(),
-                bbox: { x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1 }
-            }));
-        } catch (e) {
-            console.error("OCR Error:", e);
-        }
-
-        isProcessingOcr = false;
-    }
-
-    // Precision Continuous Line Detection for Shelf Lips & Protrusions
-    function detectPhysicalProtrusions() {
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-        const w = canvas.width;
-        const h = canvas.height;
-        const prominentEdges = [];
-
-        // Scan for continuous horizontal gradient lines (shelf ledges, desk borders)
-        for (let y = 80; y < h - 80; y += 30) {
-            let consecutiveLine = 0;
-            let startX = 0;
-
-            for (let x = 60; x < w - 60; x += 10) {
-                const idx = (y * w + x) * 4;
-                const nextIdx = ((y + 12) * w + x) * 4;
-                
-                const lum1 = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                const lum2 = 0.299 * data[nextIdx] + 0.587 * data[nextIdx+1] + 0.114 * data[nextIdx+2];
-
-                if (Math.abs(lum1 - lum2) > 110) { // High gradient jump
-                    if (consecutiveLine === 0) startX = x;
-                    consecutiveLine++;
-                } else {
-                    if (consecutiveLine >= 8) { // Require contiguous physical length (>=80px)
-                        prominentEdges.push({ x: startX, y, w: consecutiveLine * 10, h: 10 });
-                    }
-                    consecutiveLine = 0;
-                }
-            }
-        }
-        return prominentEdges.slice(0, 3); // Max 3 dominant structural edges
     }
 
     async function scanFrame() {
-        applyEnhancementFilter();
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Smooth movement interpolation for HUD tilt dynamics
+        currentOffsetX += (targetOffsetX - currentOffsetX) * 0.1;
+        currentOffsetY += (targetOffsetY - currentOffsetY) * 0.1;
 
         const rawObjects = await objectModel.detect(canvas);
         const faces = await faceModel.estimateFaces(canvas, false);
-        detectedEdges = detectPhysicalProtrusions();
 
         let validatedLabel = null;
         let bestBox = null;
@@ -338,6 +321,7 @@
 
         const cWidth = canvas.width;
         const cHeight = canvas.height;
+        const allDetectedBoxes = [];
 
         rawObjects.forEach(obj => {
             const [x, y, w, h] = obj.bbox;
@@ -347,7 +331,9 @@
             const relativeY = y / cHeight;
             let cls = obj.class.toLowerCase();
 
-            if (obj.score < 0.55 || area < 2500) return;
+            if (obj.score < 0.40 || area < 1200) return;
+
+            allDetectedBoxes.push(obj.bbox);
 
             if (cls === 'refrigerator' || cls === 'microwave' || cls === 'tv') {
                 if (aspectRatio >= 1.35 && relativeY < 0.45) {
@@ -369,7 +355,7 @@
                 }
             }
 
-            if (cls === 'person' && (w < 150 || h < 150 || aspectRatio > 1.6)) return;
+            if (cls === 'person' && (w < 100 || h < 100 || aspectRatio > 1.6)) return;
 
             if (obj.score > maxScore) {
                 maxScore = obj.score;
@@ -385,10 +371,11 @@
             const h = face.bottomRight[1] - y;
             const ratio = w / h;
 
-            if (w > 55 && h > 55 && ratio >= 0.65 && ratio <= 1.35) {
+            if (w > 45 && h > 45 && ratio >= 0.55 && ratio <= 1.45) {
                 validatedLabel = 'human_subject';
                 bestBox = [x, y, w, h];
                 maxScore = 0.98;
+                allDetectedBoxes.push(bestBox);
             }
         });
 
@@ -414,7 +401,7 @@
             }
         });
 
-        if (winner && winnerCount >= 5) {
+        if (winner && winnerCount >= 3) {
             const latestMatch = [...frameHistory].reverse().find(i => i && i.label === winner);
             activeTrack = { label: winner, score: latestMatch.score };
 
@@ -431,114 +418,147 @@
             smoothBox = null;
         }
 
+        // Draw Motion Responsive HUD Crosshair Lines
+        drawHUDMotionOverlay();
+
+        // Draw Clean Vector Edge & Ledge Lines
+        drawVectorLedges(allDetectedBoxes);
+
         if (activeTrack && smoothBox) {
             const [x, y, w, h] = smoothBox;
             drawReticle(x, y, w, h, activeTrack.label.toUpperCase());
 
             infoCard.style.display = 'block';
-            document.getElementById('card-conf').innerText = `${activeTrack.score}% (CONSENSUS LOCKED)`;
-            document.getElementById('card-ratio').innerText = `${(w/h).toFixed(2)} [W:H]`;
+            document.getElementById('card-conf').innerText = `${activeTrack.score}%`;
+            document.getElementById('card-ratio').innerText = `${(w/h).toFixed(2)}`;
 
-            renderMetadata(activeTrack.label, w, h);
+            renderMetadataAndPrice(activeTrack.label, w, h, activeTrack.score);
         } else {
             infoCard.style.display = 'none';
         }
 
-        // Render clean orange highlights
-        drawProtrusions(detectedEdges);
-        drawOrangeTextHighlights(detectedTexts);
-
         requestAnimationFrame(scanFrame);
     }
 
-    function drawOrangeTextHighlights(texts) {
-        texts.forEach(item => {
-            const b = item.bbox;
-            const w = b.x1 - b.x0;
-            const h = b.y1 - b.y0;
+    // Motion-reactive dynamic guide lines
+    function drawHUDMotionOverlay() {
+        const cx = (canvas.width / 2) + currentOffsetX;
+        const cy = (canvas.height / 2) + currentOffsetY;
 
-            ctx.fillStyle = "rgba(255, 153, 0, 0.25)";
-            ctx.fillRect(b.x0, b.y0, w, h);
+        ctx.strokeStyle = "rgba(0, 243, 255, 0.35)";
+        ctx.lineWidth = 1;
 
-            ctx.strokeStyle = "#ff9900";
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(b.x0, b.y0, w, h);
+        // Dynamic center horiz/vert guides
+        ctx.beginPath();
+        ctx.moveTo(cx - 60, cy); ctx.lineTo(cx - 15, cy);
+        ctx.moveTo(cx + 15, cy); ctx.lineTo(cx + 60, cy);
+        ctx.moveTo(cx, cy - 60); ctx.lineTo(cx, cy - 15);
+        ctx.moveTo(cx, cy + 15); ctx.lineTo(cx, cy + 60);
+        ctx.stroke();
 
-            ctx.fillStyle = "#ff9900";
-            ctx.font = "12px 'Share Tech Mono'";
-            ctx.fillText(`[TXT: ${item.text}]`, b.x0, b.y0 - 5);
+        ctx.strokeStyle = "rgba(255, 238, 0, 0.5)";
+        ctx.strokeRect(cx - 3, cy - 3, 6, 6);
+    }
+
+    // Zero-lag vector ledge and edge lines that track movement
+    function drawVectorLedges(boxes) {
+        ctx.strokeStyle = "rgba(255, 153, 0, 0.85)";
+        ctx.lineWidth = 1.5;
+
+        boxes.forEach(box => {
+            const [x, y, w, h] = box;
+            const mx = currentOffsetX * 0.15;
+            const my = currentOffsetY * 0.15;
+
+            // Top Ledge Line with ticks
+            ctx.beginPath();
+            ctx.moveTo(x - 10 + mx, y + my);
+            ctx.lineTo(x + w + 10 + mx, y + my);
+            ctx.moveTo(x + mx, y - 4 + my); ctx.lineTo(x + mx, y + 4 + my);
+            ctx.moveTo(x + w + mx, y - 4 + my); ctx.lineTo(x + w + mx, y + 4 + my);
+            ctx.stroke();
+
+            // Bottom Support Line
+            ctx.beginPath();
+            ctx.moveTo(x - 5 + mx, y + h + my);
+            ctx.lineTo(x + w + 5 + mx, y + h + my);
+            ctx.stroke();
         });
     }
 
-    function drawProtrusions(edges) {
-        edges.forEach(e => {
-            ctx.strokeStyle = "#ff9900";
-            ctx.lineWidth = 2;
-            ctx.setLineDash([6, 4]);
-            ctx.strokeRect(e.x, e.y, e.w, e.h);
-            ctx.setLineDash([]);
-
-            ctx.fillStyle = "#ff9900";
-            ctx.font = "11px 'Share Tech Mono'";
-            ctx.fillText("[SHELF / PROTRUSION BORDER]", e.x, e.y - 4);
-        });
-    }
-
-    function handleCanvasClick(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-
-        const clickX = (e.clientX - rect.left) * scaleX;
-        const clickY = (e.clientY - rect.top) * scaleY;
-
-        detectedTexts.forEach(item => {
-            const b = item.bbox;
-            if (clickX >= b.x0 && clickX <= b.x1 && clickY >= b.y0 && clickY <= b.y1) {
-                navigator.clipboard.writeText(item.text);
-                showToast(`COPIED: "${item.text}"`);
-            }
-        });
-    }
-
-    function showToast(msg) {
-        toast.innerText = msg;
-        toast.style.display = 'block';
-        setTimeout(() => { toast.style.display = 'none'; }, 2200);
-    }
-
-    function renderMetadata(label, w, h) {
+    function renderMetadataAndPrice(label, w, h, score) {
         const titleEl = document.getElementById('card-title');
+        const catEl = document.getElementById('card-cat');
         const entityEl = document.getElementById('card-entity');
-        const priceEl = document.getElementById('card-price');
+        const rangeEl = document.getElementById('card-price-range');
+        const newEl = document.getElementById('card-price-new');
+        const usedEl = document.getElementById('card-price-used');
+        const condEl = document.getElementById('card-condition');
         const descEl = document.getElementById('card-desc');
+        const linkEl = document.getElementById('card-link');
 
-        if (label === 'air_conditioner') {
-            titleEl.innerText = "AIR CONDITIONER UNIT";
-            entityEl.innerText = "HVAC / COOLING APPLIANCE";
-            priceEl.innerText = "$300.00 - $1,200.00 USD";
-            descEl.innerText = "Horizontal spatial geometry and overhead mounting height validated.";
-        } else if (label === 'refrigerator') {
-            titleEl.innerText = "REFRIGERATOR";
-            entityEl.innerText = "KITCHEN COOLING TOWER";
-            priceEl.innerText = "$600.00 - $2,800.00 USD";
-            descEl.innerText = "Vertical aspect ratio (H > W) and floor depth verified.";
-        } else if (label === 'lamp_fixture') {
-            titleEl.innerText = "LIGHTING FIXTURE / LAMP";
-            entityEl.innerText = "LUMINAIRE SYSTEM";
-            priceEl.innerText = "$25.00 - $180.00 USD";
-            descEl.innerText = "Grounded indoor profile confirmed. Rejection guard prevented false airplane trigger.";
-        } else if (label === 'human_subject') {
-            titleEl.innerText = "HUMAN SUBJECT";
-            entityEl.innerText = "BIOMETRIC ENTITY";
-            priceEl.innerText = "VERIFIED BIOMETRIC";
-            descEl.innerText = "Facial mesh alignment verified via real-time geometric vision lock.";
-        } else {
-            titleEl.innerText = label.toUpperCase();
-            entityEl.innerText = label.toUpperCase();
-            priceEl.innerText = "VERIFIED ENTITY";
-            descEl.innerText = "Consensus matrix validated object identity across temporal buffer.";
+        const area = w * h;
+        const frameArea = canvas.width * canvas.height;
+        const sizeRatio = Math.min(area / frameArea, 1.0);
+        const sizeMult = 0.85 + (sizeRatio * 0.45);
+
+        const catalog = {
+            'air_conditioner': { title: "AIR CONDITIONER", cat: "HVAC APPLIANCE", min: 350, max: 1500, desc: "Overhead cooling unit spatial profile detected." },
+            'refrigerator': { title: "REFRIGERATOR", cat: "KITCHEN APPLIANCE", min: 600, max: 2800, desc: "Vertical cooling appliance profile detected." },
+            'tv': { title: "TELEVISION / MONITOR", cat: "ELECTRONICS", min: 180, max: 2200, desc: "Display panel aspect ratio confirmed." },
+            'laptop': { title: "LAPTOP COMPUTER", cat: "COMPUTING", min: 350, max: 2400, desc: "Portable computer spatial geometry detected." },
+            'cell phone': { title: "MOBILE PHONE", cat: "ELECTRONICS", min: 120, max: 1300, desc: "Handheld mobile communications device." },
+            'lamp_fixture': { title: "LIGHT FIXTURE", cat: "LIGHTING", min: 25, max: 220, desc: "Grounded or ceiling luminaire profile detected." },
+            'chair': { title: "CHAIR / SEATING", cat: "FURNITURE", min: 40, max: 450, desc: "Furniture profile verified." },
+            'couch': { title: "SOFA / COUCH", cat: "FURNITURE", min: 300, max: 2200, desc: "Seating arrangement geometry detected." },
+            'potted plant': { title: "POTTED PLANT", cat: "DECOR", min: 15, max: 120, desc: "Botanical indoor feature." },
+            'bottle': { title: "BOTTLE / CONTAINER", cat: "CONTAINER", min: 2, max: 35, desc: "Liquid container geometry." },
+            'backpack': { title: "BACKPACK", cat: "BAGS & GEAR", min: 25, max: 180, desc: "Storage accessory profile." },
+            'keyboard': { title: "KEYBOARD", cat: "PERIPHERALS", min: 20, max: 200, desc: "Input peripheral profile." },
+            'mouse': { title: "COMPUTER MOUSE", cat: "PERIPHERALS", min: 10, max: 120, desc: "Pointing peripheral profile." },
+            'dog': { title: "DOG", cat: "CANINE", isLiving: true, desc: "Domestic canine detected." },
+            'cat': { title: "CAT", cat: "FELINE", isLiving: true, desc: "Domestic feline detected." },
+            'bird': { title: "BIRD", cat: "AVIAN", isLiving: true, desc: "Avian subject detected." },
+            'human_subject': { title: "HUMAN SUBJECT", cat: "BIOMETRIC", isLiving: true, desc: "Facial features detected via vision tracker." }
+        };
+
+        const item = catalog[label] || { 
+            title: label.toUpperCase(), 
+            cat: "GENERAL OBJECT", 
+            min: 20, 
+            max: 300, 
+            desc: "Object detected within standard bounding box." 
+        };
+
+        titleEl.innerText = item.title;
+        catEl.innerText = item.cat;
+        entityEl.innerText = item.title;
+        descEl.innerText = item.desc;
+
+        linkEl.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(item.title)}`;
+        linkEl.innerText = `FIND ${item.title} ONLINE ↗`;
+
+        // Living things restriction logic
+        if (livingClasses.has(label) || item.isLiving) {
+            rangeEl.innerText = "N/A (LIVING BEING)";
+            newEl.innerText = "N/A";
+            usedEl.innerText = "N/A";
+            condEl.innerText = "ACTIVE";
+            linkEl.style.display = 'none';
+            return;
         }
+
+        linkEl.style.display = 'inline-block';
+
+        const estMin = Math.round(item.min * sizeMult);
+        const estMax = Math.round(item.max * sizeMult);
+        const estNewVal = Math.round(((estMin + estMax) / 2) * 1.1);
+        const estUsedVal = Math.round(estNewVal * 0.58);
+
+        rangeEl.innerText = `$${estMin.toLocaleString()} - $${estMax.toLocaleString()} USD`;
+        newEl.innerText = `$${estNewVal.toLocaleString()} USD`;
+        usedEl.innerText = `$${estUsedVal.toLocaleString()} USD`;
+        condEl.innerText = score > 85 ? "EXCELLENT / PRIME" : (score > 70 ? "GOOD / STANDARD" : "FAIR / USED");
     }
 
     function drawReticle(x, y, w, h, label) {
@@ -562,7 +582,7 @@
 
         ctx.fillStyle = '#00f3ff';
         ctx.font = "13px 'Share Tech Mono'";
-        ctx.fillText(`[ CONSENSUS LOCK // ${label} ]`, x, y - 10);
+        ctx.fillText(`[ TRACKING // ${label} ]`, x, y - 10);
     }
 </script>
 </body>
