@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>phanes</title>
+    <title>phanes.&#12288;&#12288;&#12288;&#12288;&#12288;</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
@@ -174,33 +174,6 @@
             line-height: 1.4;
             border-radius: 2px;
         }
-
-        .controls {
-            position: absolute;
-            bottom: 35px;
-            left: 35px;
-            z-index: 3;
-        }
-
-        button {
-            background: var(--hud-bg);
-            border: 1px solid var(--hud-cyan);
-            color: var(--hud-cyan);
-            padding: 14px 32px;
-            font-family: inherit;
-            font-size: 0.95rem;
-            cursor: pointer;
-            letter-spacing: 2px;
-            transition: all 0.25s ease;
-            border-radius: 2px;
-        }
-
-        button:hover {
-            background: var(--hud-cyan);
-            color: #000;
-            box-shadow: 0 0 25px var(--hud-cyan);
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -212,21 +185,21 @@
     <div class="hud-border"></div>
 
     <div class="hud-header">
-        <h1>PHANES // VISION SYSTEM v4.0</h1>
-        <span id="status">SYSTEM IDLE // PRESS START TO INITIALIZE</span>
+        <h1>PHANES // VISION SYSTEM</h1>
+        <span id="status">INITIALIZING SYSTEM...</span>
     </div>
 
     <div id="info-card" class="hud-card">
         <h2>
             <span id="card-title">TARGET LOCKED</span>
-            <span id="card-cat" class="category-tag">GENERAL</span>
+            <span id="card-cat" class="category-tag">OBJECT</span>
         </h2>
         <div class="data-row"><span class="label">CLASSIFICATION:</span> <span id="card-entity" class="val">-</span></div>
         <div class="data-row"><span class="label">DETECTION CONFIDENCE:</span> <span id="card-conf" class="val" style="color:var(--hud-green);">-</span></div>
         <div class="data-row"><span class="label">FRAME RATIO (W:H):</span> <span id="card-ratio" class="val" style="color:var(--hud-yellow);">-</span></div>
         
         <div class="price-section">
-            <div class="title">ADVANCED PRICE ESTIMATOR</div>
+            <div class="title">PRICE ESTIMATOR</div>
             <div class="data-row"><span class="label">EST. MARKET VALUE:</span> <span id="card-price-range" class="val" style="color:var(--hud-cyan);">-</span></div>
             <div class="data-row"><span class="label">EST. RETAIL NEW:</span> <span id="card-price-new" class="val">-</span></div>
             <div class="data-row"><span class="label">EST. USED / REFURB:</span> <span id="card-price-used" class="val">-</span></div>
@@ -237,125 +210,164 @@
 
         <div class="desc-box" id="card-desc">Analyzing spatial dimensions...</div>
     </div>
-
-    <div class="controls">
-        <button onclick="initApp()">START VISION</button>
-    </div>
 </div>
 
 <script>
     let objectModel, faceModel;
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('output');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
     const statusText = document.getElementById('status');
     const infoCard = document.getElementById('info-card');
 
+    // Dedicated offscreen canvas for high-precision inference processing
+    const aiCanvas = document.createElement('canvas');
+    const aiCtx = aiCanvas.getContext('2d', { willReadFrequently: true });
+    
+    // Higher internal resolution for accuracy
+    aiCanvas.width = 640;
+    aiCanvas.height = 480;
+
     let activeTrack = null;
     let smoothBox = null;
+    let targetBox = null;
     let frameHistory = [];
-    const HISTORY_LIMIT = 10;
+    const HISTORY_LIMIT = 12;
 
-    // Interactive Motion & Gyro Offset tracking
     let targetOffsetX = 0;
     let targetOffsetY = 0;
     let currentOffsetX = 0;
     let currentOffsetY = 0;
 
-    // Listen for Device Orientation (Gyroscopic Motion)
+    let isAiBusy = false;
+    let rawObjects = [];
+    let faces = [];
+    let allDetectedBoxes = [];
+
+    let lastFrameTime = performance.now();
+    let frameCount = 0;
+    let currentFPS = 0;
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
     window.addEventListener('deviceorientation', (e) => {
         if (e.gamma !== null && e.beta !== null) {
-            targetOffsetX = e.gamma * 2.5; // Left/Right Tilt
-            targetOffsetY = (e.beta - 45) * 2.5; // Forward/Back Tilt
+            targetOffsetX = e.gamma * 2.5;
+            targetOffsetY = (e.beta - 45) * 2.5;
         }
     });
 
-    // Fallback for Mouse/Touch Motion
     window.addEventListener('mousemove', (e) => {
         targetOffsetX = ((e.clientX / window.innerWidth) - 0.5) * 120;
         targetOffsetY = ((e.clientY / window.innerHeight) - 0.5) * 120;
     });
 
-    // Living beings list (strictly exclude pricing)
     const livingClasses = new Set([
-        'person', 'human_subject', 'cat', 'dog', 'bird', 'horse', 'sheep', 
+        'person', 'human', 'cat', 'dog', 'bird', 'horse', 'sheep', 
         'cow', 'elephant', 'bear', 'zebra', 'giraffe'
     ]);
 
     async function setupCamera() {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: 1280, height: 720 },
+        const constraints = {
+            video: {
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
             audio: false
-        });
-        video.srcObject = stream;
+        };
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+        } catch (err) {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            video.srcObject = stream;
+        }
+
         return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
     }
 
     async function initApp() {
-        statusText.innerText = "LOADING AI MODELS...";
-        objectModel = await cocoSsd.load();
-        faceModel = await blazeface.load();
+        try {
+            statusText.innerText = "LOADING VISION MODELS...";
+            await tf.setBackend('webgl');
+            await tf.ready();
 
-        await setupCamera();
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        statusText.innerText = "SYSTEM ACTIVE // DETECTOR ONLINE";
+            // Load full accuracy mobilenet_v2 model without manual override hacks
+            objectModel = await cocoSsd.load({ base: 'mobilenet_v2' });
+            faceModel = await blazeface.load();
 
-        scanFrame();
+            statusText.innerText = "STARTING CAMERA...";
+            await setupCamera();
+            
+            canvas.width = video.videoWidth || window.innerWidth;
+            canvas.height = video.videoHeight || window.innerHeight;
+
+            runAiLoop();
+            renderLoop();
+        } catch (e) {
+            statusText.innerText = "ERROR INITIALIZING VISION SYSTEM: " + e.message;
+        }
     }
 
-    async function scanFrame() {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    async function runAiLoop() {
+        if (!isAiBusy && video.readyState === 4) {
+            isAiBusy = true;
 
-        // Smooth movement interpolation for HUD tilt dynamics
-        currentOffsetX += (targetOffsetX - currentOffsetX) * 0.1;
-        currentOffsetY += (targetOffsetY - currentOffsetY) * 0.1;
+            aiCtx.drawImage(video, 0, 0, aiCanvas.width, aiCanvas.height);
 
-        const rawObjects = await objectModel.detect(canvas);
-        const faces = await faceModel.estimateFaces(canvas, false);
+            const scaleX = canvas.width / aiCanvas.width;
+            const scaleY = canvas.height / aiCanvas.height;
 
+            try {
+                const [objRes, faceRes] = await Promise.all([
+                    objectModel.detect(aiCanvas, 10, 0.55), // Raised threshold to eliminate false positive noise
+                    faceModel.estimateFaces(aiCanvas, false)
+                ]);
+
+                rawObjects = objRes.map(obj => ({
+                    ...obj,
+                    bbox: [
+                        obj.bbox[0] * scaleX,
+                        obj.bbox[1] * scaleY,
+                        obj.bbox[2] * scaleX,
+                        obj.bbox[3] * scaleY
+                    ]
+                }));
+
+                faces = faceRes.map(face => ({
+                    topLeft: [face.topLeft[0] * scaleX, face.topLeft[1] * scaleY],
+                    bottomRight: [face.bottomRight[0] * scaleX, face.bottomRight[1] * scaleY]
+                }));
+
+                processDetections();
+            } catch (err) {
+                console.error(err);
+            }
+
+            isAiBusy = false;
+        }
+
+        setTimeout(runAiLoop, 40);
+    }
+
+    function processDetections() {
         let validatedLabel = null;
         let bestBox = null;
         let maxScore = 0;
 
-        const cWidth = canvas.width;
-        const cHeight = canvas.height;
-        const allDetectedBoxes = [];
+        allDetectedBoxes = [];
 
+        // Direct AI confidence-based extraction
         rawObjects.forEach(obj => {
             const [x, y, w, h] = obj.bbox;
             const area = w * h;
-            const aspectRatio = w / h; 
-            const vertRatio = h / w;
-            const relativeY = y / cHeight;
-            let cls = obj.class.toLowerCase();
+            const cls = obj.class.toLowerCase();
 
-            if (obj.score < 0.40 || area < 1200) return;
+            if (obj.score < 0.55 || area < 1000) return;
 
             allDetectedBoxes.push(obj.bbox);
-
-            if (cls === 'refrigerator' || cls === 'microwave' || cls === 'tv') {
-                if (aspectRatio >= 1.35 && relativeY < 0.45) {
-                    cls = 'air_conditioner';
-                } else if (vertRatio >= 1.05 && relativeY > 0.15) {
-                    cls = 'refrigerator';
-                }
-            }
-
-            if (cls === 'airplane' || cls === 'kite') {
-                if (vertRatio > 0.85 || relativeY > 0.1) {
-                    cls = 'lamp_fixture';
-                }
-            }
-
-            if (cls === 'vase' || cls === 'bottle') {
-                if (relativeY < 0.6 && vertRatio > 1.3) {
-                    cls = 'lamp_fixture';
-                }
-            }
-
-            if (cls === 'person' && (w < 100 || h < 100 || aspectRatio > 1.6)) return;
 
             if (obj.score > maxScore) {
                 maxScore = obj.score;
@@ -369,10 +381,9 @@
             const y = face.topLeft[1];
             const w = face.bottomRight[0] - x;
             const h = face.bottomRight[1] - y;
-            const ratio = w / h;
 
-            if (w > 45 && h > 45 && ratio >= 0.55 && ratio <= 1.45) {
-                validatedLabel = 'human_subject';
+            if (w > 30 && h > 30) {
+                validatedLabel = 'human';
                 bestBox = [x, y, w, h];
                 maxScore = 0.98;
                 allDetectedBoxes.push(bestBox);
@@ -401,30 +412,47 @@
             }
         });
 
-        if (winner && winnerCount >= 3) {
+        // Require majority consensus across history buffer to stabilize label locking
+        if (winner && winnerCount >= 4) {
             const latestMatch = [...frameHistory].reverse().find(i => i && i.label === winner);
             activeTrack = { label: winner, score: latestMatch.score };
-
-            if (!smoothBox) {
-                smoothBox = [...latestMatch.box];
-            } else {
-                smoothBox[0] = smoothBox[0] * 0.7 + latestMatch.box[0] * 0.3;
-                smoothBox[1] = smoothBox[1] * 0.7 + latestMatch.box[1] * 0.3;
-                smoothBox[2] = smoothBox[2] * 0.7 + latestMatch.box[2] * 0.3;
-                smoothBox[3] = smoothBox[3] * 0.7 + latestMatch.box[3] * 0.3;
-            }
+            targetBox = latestMatch.box;
         } else {
             activeTrack = null;
-            smoothBox = null;
+            targetBox = null;
+        }
+    }
+
+    function renderLoop() {
+        const now = performance.now();
+        frameCount++;
+
+        if (now - lastFrameTime >= 1000) {
+            currentFPS = Math.round((frameCount * 1000) / (now - lastFrameTime));
+            frameCount = 0;
+            lastFrameTime = now;
+
+            statusText.innerText = `SYSTEM ACTIVE // ${canvas.width}x${canvas.height} @ ${currentFPS} FPS`;
         }
 
-        // Draw Motion Responsive HUD Crosshair Lines
-        drawHUDMotionOverlay();
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Draw Clean Vector Edge & Ledge Lines
+        currentOffsetX += (targetOffsetX - currentOffsetX) * 0.1;
+        currentOffsetY += (targetOffsetY - currentOffsetY) * 0.1;
+
+        drawHUDMotionOverlay();
         drawVectorLedges(allDetectedBoxes);
 
-        if (activeTrack && smoothBox) {
+        if (activeTrack && targetBox) {
+            if (!smoothBox) {
+                smoothBox = [...targetBox];
+            } else {
+                smoothBox[0] += (targetBox[0] - smoothBox[0]) * 0.2;
+                smoothBox[1] += (targetBox[1] - smoothBox[1]) * 0.2;
+                smoothBox[2] += (targetBox[2] - smoothBox[2]) * 0.2;
+                smoothBox[3] += (targetBox[3] - smoothBox[3]) * 0.2;
+            }
+
             const [x, y, w, h] = smoothBox;
             drawReticle(x, y, w, h, activeTrack.label.toUpperCase());
 
@@ -434,13 +462,13 @@
 
             renderMetadataAndPrice(activeTrack.label, w, h, activeTrack.score);
         } else {
+            smoothBox = null;
             infoCard.style.display = 'none';
         }
 
-        requestAnimationFrame(scanFrame);
+        requestAnimationFrame(renderLoop);
     }
 
-    // Motion-reactive dynamic guide lines
     function drawHUDMotionOverlay() {
         const cx = (canvas.width / 2) + currentOffsetX;
         const cy = (canvas.height / 2) + currentOffsetY;
@@ -448,7 +476,6 @@
         ctx.strokeStyle = "rgba(0, 243, 255, 0.35)";
         ctx.lineWidth = 1;
 
-        // Dynamic center horiz/vert guides
         ctx.beginPath();
         ctx.moveTo(cx - 60, cy); ctx.lineTo(cx - 15, cy);
         ctx.moveTo(cx + 15, cy); ctx.lineTo(cx + 60, cy);
@@ -460,7 +487,6 @@
         ctx.strokeRect(cx - 3, cy - 3, 6, 6);
     }
 
-    // Zero-lag vector ledge and edge lines that track movement
     function drawVectorLedges(boxes) {
         ctx.strokeStyle = "rgba(255, 153, 0, 0.85)";
         ctx.lineWidth = 1.5;
@@ -470,7 +496,6 @@
             const mx = currentOffsetX * 0.15;
             const my = currentOffsetY * 0.15;
 
-            // Top Ledge Line with ticks
             ctx.beginPath();
             ctx.moveTo(x - 10 + mx, y + my);
             ctx.lineTo(x + w + 10 + mx, y + my);
@@ -478,7 +503,6 @@
             ctx.moveTo(x + w + mx, y - 4 + my); ctx.lineTo(x + w + mx, y + 4 + my);
             ctx.stroke();
 
-            // Bottom Support Line
             ctx.beginPath();
             ctx.moveTo(x - 5 + mx, y + h + my);
             ctx.lineTo(x + w + 5 + mx, y + h + my);
@@ -497,49 +521,17 @@
         const descEl = document.getElementById('card-desc');
         const linkEl = document.getElementById('card-link');
 
-        const area = w * h;
-        const frameArea = canvas.width * canvas.height;
-        const sizeRatio = Math.min(area / frameArea, 1.0);
-        const sizeMult = 0.85 + (sizeRatio * 0.45);
+        const cleanLabel = label.toUpperCase();
 
-        const catalog = {
-            'air_conditioner': { title: "AIR CONDITIONER", cat: "HVAC APPLIANCE", min: 350, max: 1500, desc: "Overhead cooling unit spatial profile detected." },
-            'refrigerator': { title: "REFRIGERATOR", cat: "KITCHEN APPLIANCE", min: 600, max: 2800, desc: "Vertical cooling appliance profile detected." },
-            'tv': { title: "TELEVISION / MONITOR", cat: "ELECTRONICS", min: 180, max: 2200, desc: "Display panel aspect ratio confirmed." },
-            'laptop': { title: "LAPTOP COMPUTER", cat: "COMPUTING", min: 350, max: 2400, desc: "Portable computer spatial geometry detected." },
-            'cell phone': { title: "MOBILE PHONE", cat: "ELECTRONICS", min: 120, max: 1300, desc: "Handheld mobile communications device." },
-            'lamp_fixture': { title: "LIGHT FIXTURE", cat: "LIGHTING", min: 25, max: 220, desc: "Grounded or ceiling luminaire profile detected." },
-            'chair': { title: "CHAIR / SEATING", cat: "FURNITURE", min: 40, max: 450, desc: "Furniture profile verified." },
-            'couch': { title: "SOFA / COUCH", cat: "FURNITURE", min: 300, max: 2200, desc: "Seating arrangement geometry detected." },
-            'potted plant': { title: "POTTED PLANT", cat: "DECOR", min: 15, max: 120, desc: "Botanical indoor feature." },
-            'bottle': { title: "BOTTLE / CONTAINER", cat: "CONTAINER", min: 2, max: 35, desc: "Liquid container geometry." },
-            'backpack': { title: "BACKPACK", cat: "BAGS & GEAR", min: 25, max: 180, desc: "Storage accessory profile." },
-            'keyboard': { title: "KEYBOARD", cat: "PERIPHERALS", min: 20, max: 200, desc: "Input peripheral profile." },
-            'mouse': { title: "COMPUTER MOUSE", cat: "PERIPHERALS", min: 10, max: 120, desc: "Pointing peripheral profile." },
-            'dog': { title: "DOG", cat: "CANINE", isLiving: true, desc: "Domestic canine detected." },
-            'cat': { title: "CAT", cat: "FELINE", isLiving: true, desc: "Domestic feline detected." },
-            'bird': { title: "BIRD", cat: "AVIAN", isLiving: true, desc: "Avian subject detected." },
-            'human_subject': { title: "HUMAN SUBJECT", cat: "BIOMETRIC", isLiving: true, desc: "Facial features detected via vision tracker." }
-        };
+        titleEl.innerText = cleanLabel;
+        catEl.innerText = livingClasses.has(label) ? "BIOMETRIC / LIVING" : "OBJECT";
+        entityEl.innerText = cleanLabel;
+        descEl.innerText = `Detected via neural spatial pattern matching.`;
 
-        const item = catalog[label] || { 
-            title: label.toUpperCase(), 
-            cat: "GENERAL OBJECT", 
-            min: 20, 
-            max: 300, 
-            desc: "Object detected within standard bounding box." 
-        };
+        linkEl.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(cleanLabel)}`;
+        linkEl.innerText = `FIND ${cleanLabel} ONLINE ↗`;
 
-        titleEl.innerText = item.title;
-        catEl.innerText = item.cat;
-        entityEl.innerText = item.title;
-        descEl.innerText = item.desc;
-
-        linkEl.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(item.title)}`;
-        linkEl.innerText = `FIND ${item.title} ONLINE ↗`;
-
-        // Living things restriction logic
-        if (livingClasses.has(label) || item.isLiving) {
+        if (livingClasses.has(label)) {
             rangeEl.innerText = "N/A (LIVING BEING)";
             newEl.innerText = "N/A";
             usedEl.innerText = "N/A";
@@ -550,15 +542,10 @@
 
         linkEl.style.display = 'inline-block';
 
-        const estMin = Math.round(item.min * sizeMult);
-        const estMax = Math.round(item.max * sizeMult);
-        const estNewVal = Math.round(((estMin + estMax) / 2) * 1.1);
-        const estUsedVal = Math.round(estNewVal * 0.58);
-
-        rangeEl.innerText = `$${estMin.toLocaleString()} - $${estMax.toLocaleString()} USD`;
-        newEl.innerText = `$${estNewVal.toLocaleString()} USD`;
-        usedEl.innerText = `$${estUsedVal.toLocaleString()} USD`;
-        condEl.innerText = score > 85 ? "EXCELLENT / PRIME" : (score > 70 ? "GOOD / STANDARD" : "FAIR / USED");
+        rangeEl.innerText = "MARKET DEPENDENT";
+        newEl.innerText = "ESTIMATING...";
+        usedEl.innerText = "ESTIMATING...";
+        condEl.innerText = score > 85 ? "HIGH ACCURACY" : "STANDARD ACCURACY";
     }
 
     function drawReticle(x, y, w, h, label) {
