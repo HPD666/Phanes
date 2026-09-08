@@ -30,4 +30,4 @@ PHANES is a web-based computer vision and real-time object tracking system built
 
 1. Clone or download this repository:
    ```bash
-   git clone [https://github.com/your-username/phanes-vision-system.git](https://github.com/your-username/phanes-vision-system.git)
+   git clone [https://github.com/hpd666/phanes.git](https://github.com/hpd666/phanes.git)
